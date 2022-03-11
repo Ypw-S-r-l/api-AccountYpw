@@ -226,12 +226,6 @@ async def actualizar(user: UserRequestModel, keyUser: str):
                 "res": None
             }
 
-#rosalbasuarez530luis
-#rosalbas53
-
-#luisgabriel530luis
-#luissg53
-
     try:
         
         update= {"username": user.username, "password": user.password,
@@ -249,22 +243,6 @@ async def actualizar(user: UserRequestModel, keyUser: str):
         "metodoPago": user.metodoPago, "servidorDB": user.servidorDB, 
         "userDB": user.userDB, "puertoDB": user.puertoDB,
         "pagWeb": user.pagWeb}
-
-
-        """
-        update= connection.execute(users.update().values(
-            username= user.username, password= user.password, 
-            name= user.name, email= user.email, phone= user.phone, dateOfBirth= user.dateOfBirth, 
-            language= user.language, country= user.country, ypwCashBalance= user.ypwCashBalance, 
-            shippingAddress= user.shippingAddress, identificationCard= user.identificationCard, 
-            registrationDate= user.registrationDate, accountUpdateDate= user.accountUpdateDate, 
-            accountVersion= user.accountVersion, timeZone= user.timeZone, recoveryCode= user.recoveryCode, 
-            applications= user.applications, limitations= user.limitations, accountType= user.accountType, 
-            tradingExits= user.tradingExits, pendingInvoices= user.pendingInvoices, bills= user.bills, 
-            subscriptions= user.subscriptions, metodoPago= user.metodoPago, servidorDB= user.servidorDB, 
-            userDB= user.userDB, puertoDB= user.puertoDB, pagWeb= user.pagWeb
-        ).where(users.c.keyUser == keyUser))
-        """
 
         fecha = datetime.today().strftime('%d-%m-%Y %H:%M:%S')
         update["accountUpdateDate"] = fecha
