@@ -67,11 +67,8 @@ class UserRequestModel(BaseModel):
     country: Optional[str]
     ypwCashBalance: Optional[str]
     shippingAddress: Optional[str] #List
-    registrationDate: Optional[str]
     identificationCard: Optional[str]
-    accountUpdateDate: Optional[str] #date
     accountVersion: Optional[str]
-    timeZone: Optional[str] #date
     recoveryCode: Optional[str]
     applications: Optional[str] #List
     limitations: Optional[str] #List
@@ -93,13 +90,10 @@ class UserResponseModel(UserRequestModel):
 
 #***** REGISTRO ***** modelo
 class UserRegistro(BaseModel):
-    #fechaRegistro: datetime= datetime.today().strftime('%d-%m-%Y %H:%M:%S')
-    registrationDate: Optional[str]
     username: str
     password: str
     name: str
     email: str
-    #keyUser: Optional[str]
 
 
 #***** LOGIN ****** modelo

@@ -1,7 +1,7 @@
+import jwt, re, secrets, time
 from wsgiref import headers
 from fastapi import APIRouter
 from fastapi.encoders import jsonable_encoder
-import jwt, re, secrets
 from Database.conexion import conn as connection
 from Models.index import users
 from Schemas.schemas import UserLogin, UserRegistro, UserRequestModel
@@ -41,7 +41,7 @@ async def obtenerDatos():
     except:
         return {
             "error": True,
-            "message": "La peticion no se pudo procesar",
+            "message": "Internal error server: la peticion no se pudo procesar",
             "res": None
         }
 
@@ -70,10 +70,9 @@ async def obtenerUsuario(userID: int):
     except:
         return {
             "error": True,
-            "message": "Ha ocurrido un problema con la peticion",
+            "message": "Internal error server: ha ocurrido un problema con la peticion",
             "res": None
         }
-
 
 
 #********* ruta: REGISTRAR USUARIO *********
@@ -140,7 +139,7 @@ async def registrar(user: UserRegistro):
             }
     else:
         return {
-            "error": True,
+            "error": False,
             "message": "Correo electronico invalido.",
             "res": None
         }
@@ -149,6 +148,21 @@ async def registrar(user: UserRegistro):
 #********* ruta: LOGIN *********
 @user.post("/api/v1/login", tags=["Usuario"])
 async def login(login: UserLogin):
+
+    #Validando que la connection sea True
+    def is_empty(con):
+        if con:
+            return {
+                "error": False,
+                "message": "Usuario encontrado",
+                "res": token
+            }
+        else:
+            return {
+                "error": False,
+                "message": "Usuario no encontrado",
+                "res": None
+            }
 
     try:
         #Recogemos los datos del usuario con el modelo 'UserLogin'
@@ -161,9 +175,6 @@ async def login(login: UserLogin):
         #Verificamos con un if si el usuario ingreso correctamente sus credenciales
         if llave and uName:
 
-            #Obtenemos el keyUser del usuario
-            #kUser = dataLogin["username"]
-
             #Generador de token/keyUser
             payload = dataLogin["username"]
             key = secrets.token_hex(10)
@@ -173,36 +184,17 @@ async def login(login: UserLogin):
                 key,
                 algorithm='HS256'
             )
-            keyDecodificada = jwt.decode(token, key, algorithms='HS256')
-            connection.execute(users.update().values(token).where(users.c.username == payload))
-            print(token)
+            #keyDecodificada = jwt.decode(token, key, algorithms='HS256')
+            conx = connection.execute(users.update().values(token).where(users.c.keyUser == llave))
+            #print(token)
 
-            return JSONResponse(
-                status_code=200, 
-                content= {
-                    "error": False,
-                    "message": "Usuario encontrado",
-                    "res": token
-                }
-            )
-        else:
-            return JSONResponse(
-                status_code=404,
-                content= {
-                    "error": True,
-                    "message": "Usuario no encontrado",
-                    "res": None
-                }
-            )
+            return is_empty(conx)
     except:
-        return JSONResponse(
-            status_code= 500,
-            content= {
-                "error": True,
-                "message": "No se pudo procesar la peticion.",
-                "res": None
-            }
-        )
+        return {
+            "error": True,
+            "message": "Internal error server: no se pudo procesar la peticion.",
+            "res": None
+        }
 
 
 #********* ruta: ACTUALIZAR *********
@@ -232,10 +224,9 @@ async def actualizar(user: UserRequestModel, keyUser: str):
         "name": user.name, "email": user.email, "phone": user.phone, 
         "dateOfBirth": user.dateOfBirth, "language": user.language, 
         "country": user.country, "ypwCashBalance": user.ypwCashBalance, 
-        "shippingAddress": user.shippingAddress, 
-        "registrationDate": user.registrationDate, 
+        "shippingAddress": user.shippingAddress,  
         "identificationCard": user.identificationCard, 
-        "accountVersion": user.accountVersion, "timeZone": user.timeZone, 
+        "accountVersion": user.accountVersion, 
         "recoveryCode": user.recoveryCode, "applications": user.applications, 
         "limitations": user.limitations, "accountType": user.accountType, 
         "tradingExits": user.tradingExits, "pendingInvoices": user.pendingInvoices, 
@@ -245,11 +236,14 @@ async def actualizar(user: UserRequestModel, keyUser: str):
         "pagWeb": user.pagWeb}
 
         fecha = datetime.today().strftime('%d-%m-%Y %H:%M:%S')
-        update["accountUpdateDate"] = fecha
+        update["accountUpdateDate"]= fecha
+
+        localZone = datetime.timezone(datetime.timedelta(seconds=-time.timezone))
+        update["timeZone"]= localZone
 
         conx = connection.execute(users.update().values(update).where(users.c.keyUser == keyUser))
 
-        return conx
+        return is_empty(conx)
     except:
         return {
             "error": True,
@@ -258,6 +252,7 @@ async def actualizar(user: UserRequestModel, keyUser: str):
         }
 
 
+#********* ruta: ELIMINAR *********
 @user.delete("/api/v1/delete/{keyUser}", tags=["Usuario"])
 async def eliminar(keyUser: str):
 
