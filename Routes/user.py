@@ -1,3 +1,4 @@
+from email.policy import default
 import jwt, re, secrets, time
 from wsgiref import headers
 from fastapi import APIRouter
@@ -227,6 +228,7 @@ async def actualizar(user: UserRequestModel, keyUser: str):
         "shippingAddress": user.shippingAddress,  
         "identificationCard": user.identificationCard, 
         "accountVersion": user.accountVersion, 
+        "timeZone": user.timeZone, 
         "recoveryCode": user.recoveryCode, "applications": user.applications, 
         "limitations": user.limitations, "accountType": user.accountType, 
         "tradingExits": user.tradingExits, "pendingInvoices": user.pendingInvoices, 
@@ -238,8 +240,8 @@ async def actualizar(user: UserRequestModel, keyUser: str):
         fecha = datetime.today().strftime('%d-%m-%Y %H:%M:%S')
         update["accountUpdateDate"]= fecha
 
-        localZone = datetime.timezone(datetime.timedelta(seconds=-time.timezone))
-        update["timeZone"]= localZone
+        #localZone = datetime.timezone(datetime.timedelta(seconds=-time.timezone))
+        #update["timeZone"]= localZone
 
         conx = connection.execute(users.update().values(update).where(users.c.keyUser == keyUser))
 

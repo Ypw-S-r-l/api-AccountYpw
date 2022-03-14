@@ -69,6 +69,7 @@ class UserRequestModel(BaseModel):
     shippingAddress: Optional[str] #List
     identificationCard: Optional[str]
     accountVersion: Optional[str]
+    timeZone: Optional[str]
     recoveryCode: Optional[str]
     applications: Optional[str] #List
     limitations: Optional[str] #List
@@ -82,7 +83,6 @@ class UserRequestModel(BaseModel):
     userDB: Optional[str]
     puertoDB: Optional[str]
     pagWeb: Optional[str]
-    keyUser: Optional[str]
 
 class UserResponseModel(UserRequestModel):
     userID: int
