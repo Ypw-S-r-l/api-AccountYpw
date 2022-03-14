@@ -66,18 +66,18 @@ class UserRequestModel(BaseModel):
     language: Optional[str]
     country: Optional[str]
     ypwCashBalance: Optional[str]
-    shippingAddress: Optional[str] #List
+    shippingAddress: Optional[JSON] #List
     identificationCard: Optional[str]
     accountVersion: Optional[str]
     timeZone: Optional[str]
     recoveryCode: Optional[str]
-    applications: Optional[str] #List
-    limitations: Optional[str] #List
+    applications: Optional[JSON] #List
+    limitations: Optional[JSON] #List
     accountType: Optional[str]
-    tradingExits: Optional[str] #List
-    pendingInvoices: Optional[str] #List
-    bills: Optional[str] #List
-    subscriptions: Optional[str] #List
+    tradingExits: Optional[JSON] #List
+    pendingInvoices: Optional[JSON] #List
+    bills: Optional[JSON] #List
+    subscriptions: Optional[JSON] #List
     metodoPago: Optional[str]
     servidorDB: Optional[str]
     userDB: Optional[str]
