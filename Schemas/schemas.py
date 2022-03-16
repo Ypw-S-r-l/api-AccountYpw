@@ -1,88 +1,47 @@
-from dataclasses import dataclass
-import json
 from time import *
-from unicodedata import name
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import *
-from typing import Dict
-from datetime import datetime
-from sqlalchemy import JSON
+from typing import TypedDict
+from bs4 import BeautifulSoup
 
+def stripTarget(cadena):
+    tex = BeautifulSoup(cadena, features='html.parser').text
+    return tex
 
-"""
-class shippingAddress(BaseModel):
-    name: str
-    surname: str
-    company: str 
-    direction: str 
-    apartment: str 
-    city: str
-    state: str 
-    zipCode: str 
-    region: str
-
-    class Config:
-        orm_mode: True
-#shippingAddress = json.loads(shippingAddress)
-"""
-
-"""
-class subscription(BaseModel):
-    name: str
-    cuota: str
-    precio: str
-
-    class Config:
-        orm_mode: True
-#subscription = json.loads(subscription)
-"""
-
-"""
-class limitations(BaseModel):
-    locks: str
-    message: str
-    canNotAccess: str
-    limitRemovalDate: str
-
-    class Config:
-        orm_mode: True
-#limitations = json.loads(limitations)
-"""
-
-suscripcion = {
-    "cuota": ""
-}
 
 
 #subscription: List[str] = []
 #***** MODELO CLIENTE: solicitud *****
 class UserRequestModel(BaseModel):
-    username: Optional[str]
-    password: Optional[str]
-    name: Optional[str]
-    email: Optional[str]
-    phone: Optional[str]
-    dateOfBirth: Optional[str]
-    language: Optional[str]
-    country: Optional[str]
-    ypwCashBalance: Optional[str]
-    shippingAddress: Optional[JSON] #List
-    identificationCard: Optional[str]
-    accountVersion: Optional[str]
-    timeZone: Optional[str]
-    recoveryCode: Optional[str]
-    applications: Optional[JSON] #List
-    limitations: Optional[JSON] #List
-    accountType: Optional[str]
-    tradingExits: Optional[JSON] #List
-    pendingInvoices: Optional[JSON] #List
-    bills: Optional[JSON] #List
-    subscriptions: Optional[JSON] #List
-    metodoPago: Optional[str]
-    servidorDB: Optional[str]
-    userDB: Optional[str]
-    puertoDB: Optional[str]
-    pagWeb: Optional[str]
+    username: Optional[str]= ""
+    password: Optional[str]= ""
+    name: Optional[str]= ""
+    email: Optional[str]= ""
+    phone: Optional[str]= ""
+    dateOfBirth: Optional[str]= ""
+    language: Optional[str]= ""
+    country: Optional[str]= ""
+    ypwCashBalance: Optional[str]= ""
+    shippingAddress: dict #JSON
+    identificationCard: Optional[str]= ""
+    accountVersion: Optional[str]= ""
+    timeZone: Optional[str]= ""
+    recoveryCode: Optional[str]= ""
+    applications: dict #JSON
+    limitations: dict  #JSON
+    accountType: Optional[str]= ""
+    tradingExits: dict #JSON
+    pendingInvoices: dict  #JSON
+    bills: dict  #JSON
+    subscriptions: dict  #JSON
+    metodoPago: Optional[str]= ""
+    servidorDB: Optional[str]= ""
+    userDB: Optional[str]= ""
+    puertoDB: Optional[str]= ""
+    pagWeb: Optional[str]= ""
+
+    class Config:
+        arbitrary_types_allowed = True
 
 class UserResponseModel(UserRequestModel):
     userID: int

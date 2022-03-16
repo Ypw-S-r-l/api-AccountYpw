@@ -1,8 +1,8 @@
+import email
 from email.policy import default
-import jwt, re, secrets, time
-from wsgiref import headers
+import jwt, re, secrets
 from fastapi import APIRouter
-from fastapi.encoders import jsonable_encoder
+from bs4 import BeautifulSoup
 from Database.conexion import conn as connection
 from Models.index import users
 from Schemas.schemas import UserLogin, UserRegistro, UserRequestModel
@@ -28,7 +28,7 @@ async def obtenerDatos():
                 "error": False,
                 "message": "Datos existentes",
                 "res": data
-            }   
+            }
         else:
             return {
                 "error": False,
@@ -86,62 +86,94 @@ async def registrar(user: UserRegistro):
         return re.match(expresion_regular, correo) is not None
 
     #Validando que la connection sea True
-    def is_empty(data_structure):
+    def is_empty(data_structure, salida, error):
         if data_structure:
-            return {
-                "error": False,
-                "message": "Usuario agregado correctamente",
-                "res": {
-                    "name": name,
-                    "keyUser": token
-                }
-            }
+            return salida
         else:
-            return {
-                "error": False,
-                "message": "Usuario no se pudo agregar",
-                "res": None
-            }
+            return error
+
+    #Y comprobamos si los inputs estan vacios
+    def empty(data_structure):
+        return all(not d for d in data_structure)
+        #return len(data_structure) == 0
 
     #Obetenemos el correo introducido por el usuario y lo pasa por validador de Email
-    correo = user.email
-    correo.format(correo, es_correo_valido(correo))
+    username= user.username.lstrip()
+    username= BeautifulSoup(username, features='html.parser').text
+    #username= empty(username)
 
-    if es_correo_valido(correo) == True:
+    name= user.name.lstrip()
+    name= BeautifulSoup(name, features='html.parser').text
+    #name= empty(name)
 
-        try:
-            #Campos a rellenar
-            newUser = {"username": user.username, "name": user.name, "email": correo, "password": user.password}
+    password= user.password.lstrip()
+    password= BeautifulSoup(password, features='html.parser').text
+    #password= empty(password)
 
-            fecha = datetime.today().strftime('%d-%m-%Y %H:%M:%S')
-            newUser["registrationDate"] = fecha
+    correo= user.email.lstrip()
+    correo= BeautifulSoup(correo, features='html.parser').text
+    #correo= empty(correo)
 
-            #Generador de token/keyUser
-            name = newUser["name"]
-            secreto = newUser['email'] + newUser['password']
-            
-            token = jwt.encode(
-                {"key":f"keyUser para {name}"},
-                secreto,
-                algorithm='HS256'
-            )
-            #res = jwt.decode(token, secreto, algorithms='HS256')
-            #Pasamos el token generado al campo keyUser
-            newUser["keyUser"] = token
+    #Creamos un diccionario con los valores del usuario,
+    newUser = {"username": username, "name": name, "email": correo, "password": password}
 
-            #Conexion a ApiLogin/users(tabla)/insertar valores de NEWUSER
-            peticion = connection.execute(users.insert().values(newUser))
-            return is_empty(peticion)
-        except:
+
+    if empty(newUser) == False:
+
+        # Empezamos a procesar los datos
+        if es_correo_valido(correo) == True:
+
+            try:
+                fecha = datetime.today().strftime('%d-%m-%Y %H:%M:%S')
+                newUser["registrationDate"] = fecha
+
+                #Generador de token/keyUser
+                name = newUser["name"]
+                secreto = newUser['email'] + newUser['password']
+                
+                token = jwt.encode(
+                    {"key":f"keyUser para {name}"},
+                    secreto,
+                    algorithm='HS256'
+                )
+                #res = jwt.decode(token, secreto, algorithms='HS256')
+                #Pasamos el token generado al campo keyUser
+                newUser["keyUser"] = token
+
+                #Conexion a ApiLogin/users(tabla)/insertar valores de NEWUSER
+                peticion = connection.execute(users.insert().values(newUser))
+
+                salida= {
+                    "error": False,
+                    "message": "Usuario agregado correctamente",
+                    "res": {
+                        "name": name,
+                        "keyUser": token
+                    }
+                }
+
+                error= {
+                    "error": False,
+                    "message": "Usuario no se pudo agregar",
+                    "res": None
+                }
+                return is_empty(peticion, salida, error)
+            except:
+                return {
+                    "error": True,
+                    "message": "Ocurrió un problema en la peticion.",
+                    "res": None
+                }
+        else:
             return {
                 "error": True,
-                "message": "Ocurrió un problema en la peticion.",
+                "message": "Correo electronico invalido.",
                 "res": None
             }
     else:
         return {
-            "error": False,
-            "message": "Correo electronico invalido.",
+            "error": True,
+            "message": "Existen espacios o campos vacios.",
             "res": None
         }
 
@@ -214,7 +246,7 @@ async def actualizar(user: UserRequestModel, keyUser: str):
             }
         else:
             return {
-                "error": False,
+                "error": True,
                 "message": "Los datos no se pudieron actualizar",
                 "res": None
             }
