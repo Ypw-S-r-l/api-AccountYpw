@@ -1,5 +1,3 @@
-import email
-from email.policy import default
 import jwt, re, secrets
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
@@ -16,6 +14,17 @@ user = APIRouter()
 @user.get('/', tags=["Welcome"])
 async def root():
     return {"message": "Bienvenidos a APILogin YPW"}
+
+
+#Y comprobamos si los inputs estan vacios
+def verificarVacio(x):
+    for i in x.values():
+        if len(i) == 0:
+            print(">> Vacio")
+            return True
+        else:
+            print(">> No vacio")
+            return False
 
 
 #--------- ruta: OBTENER DATOS ---------
@@ -92,44 +101,34 @@ async def registrar(user: UserRegistro):
         else:
             return error
 
-    #Y comprobamos si los inputs estan vacios
-    def empty(data_structure):
-        return all(not d for d in data_structure)
-        #return len(data_structure) == 0
-
     #Obetenemos el correo introducido por el usuario y lo pasa por validador de Email
-    username= user.username.lstrip()
+    username= user.username.strip()
     username= BeautifulSoup(username, features='html.parser').text
-    #username= empty(username)
 
-    name= user.name.lstrip()
+    name= user.name.strip()
     name= BeautifulSoup(name, features='html.parser').text
-    #name= empty(name)
 
-    password= user.password.lstrip()
+    password= user.password.strip()
     password= BeautifulSoup(password, features='html.parser').text
-    #password= empty(password)
 
-    correo= user.email.lstrip()
+    correo= user.email.strip()
     correo= BeautifulSoup(correo, features='html.parser').text
-    #correo= empty(correo)
 
     #Creamos un diccionario con los valores del usuario,
-    newUser = {"username": username, "name": name, "email": correo, "password": password}
+    newUser = {"username": username, "name": name, "email": correo, "password": password, "accountUpdateDate": None}
+    
 
-
-    if empty(newUser) == False:
-
-        # Empezamos a procesar los datos
+    if verificarVacio(newUser) == False:
+        #Empezamos a procesar los datos
         if es_correo_valido(correo) == True:
 
             try:
-                fecha = datetime.today().strftime('%d-%m-%Y %H:%M:%S')
-                newUser["registrationDate"] = fecha
+                #fecha = datetime.today().strftime('%d-%m-%Y %H:%M:%S')
+                #newUser["registrationDate"]= datetime.now()
 
                 #Generador de token/keyUser
                 name = newUser["name"]
-                secreto = newUser['email'] + newUser['password']
+                secreto = secrets.token_hex(10)
                 
                 token = jwt.encode(
                     {"key":f"keyUser para {name}"},
@@ -137,8 +136,8 @@ async def registrar(user: UserRegistro):
                     algorithm='HS256'
                 )
                 #res = jwt.decode(token, secreto, algorithms='HS256')
-                #Pasamos el token generado al campo keyUser
-                newUser["keyUser"] = token
+                
+                newUser["keyUser"] = token #Pasamos el token generado al campo keyUser
 
                 #Conexion a ApiLogin/users(tabla)/insertar valores de NEWUSER
                 peticion = connection.execute(users.insert().values(newUser))
@@ -173,7 +172,7 @@ async def registrar(user: UserRegistro):
     else:
         return {
             "error": True,
-            "message": "Existen espacios o campos vacios.",
+            "message": "Existen campos vacios.",
             "res": None
         }
 
@@ -188,7 +187,9 @@ async def login(login: UserLogin):
             return {
                 "error": False,
                 "message": "Usuario encontrado",
-                "res": token
+                "res": {
+                    "keyUser": token
+                }
             }
         else:
             return {
@@ -198,30 +199,52 @@ async def login(login: UserLogin):
             }
 
     try:
+        username= login.username.strip()
+        username= BeautifulSoup(username, features='html.parser').text
+        
+        keyUser= login.keyUser.strip()
+        keyUser= BeautifulSoup(keyUser, features='html.parser').text
+
         #Recogemos los datos del usuario con el modelo 'UserLogin'
-        dataLogin = {"username": login.username, "keyUser": login.keyUser}
+        dataLogin = {"username": username, "keyUser": keyUser}
 
-        #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario
-        llave = connection.execute(users.select().where(users.c.keyUser == login.keyUser)).first()
-        uName = connection.execute(users.select().where(users.c.username == login.username)).first()
+        if verificarVacio(dataLogin) == False:
 
-        #Verificamos con un if si el usuario ingreso correctamente sus credenciales
-        if llave and uName:
+            #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario
+            llave = connection.execute(users.select().where(users.c.keyUser == login.keyUser)).first()
+            uName = connection.execute(users.select().where(users.c.username == login.username)).first()
 
-            #Generador de token/keyUser
-            payload = dataLogin["username"]
-            key = secrets.token_hex(10)
+            #Verificamos con un if si el usuario ingreso correctamente sus credenciales
+            if llave and uName:
 
-            token = jwt.encode(
-                {"key":f"keyUser para {payload}"},
-                key,
-                algorithm='HS256'
-            )
-            #keyDecodificada = jwt.decode(token, key, algorithms='HS256')
-            conx = connection.execute(users.update().values(token).where(users.c.keyUser == llave))
-            #print(token)
+                #Generador de token/keyUser
+                payload = dataLogin["username"]
+                key = secrets.token_hex(10)
 
-            return is_empty(conx)
+                token = jwt.encode(
+                    {"key":f"keyUser para {payload}"},
+                    key,
+                    algorithm='HS256'
+                )
+                #keyDecodificada = jwt.decode(token, key, algorithms='HS256')
+                dataLogin["keyUser"]= token
+                token= dataLogin["keyUser"]
+
+                conx = connection.execute(users.update().values(token).where(users.c.keyUser == llave))
+
+                return is_empty(conx)
+            else:
+                return {
+                    "error": True,
+                    "message": "Username o Password inválido/s",
+                    "res": None
+                }
+        else:
+            return {
+                "error": True,
+                "message": "Existen campos vacios.",
+                "res": None
+            }
     except:
         return {
             "error": True,
@@ -235,7 +258,7 @@ async def login(login: UserLogin):
 async def actualizar(user: UserRequestModel, keyUser: str):
 
     #loginKey= {"keyUser": UserUpdate.keyUser}
-    #key = connection.execute(users.select().where(users.c.keyUser == u.keyUser)).first()
+    key = connection.execute(users.select().where(users.c.keyUser == keyUser)).first()
 
     def is_empty(data_structure):
         if data_structure:
@@ -250,34 +273,65 @@ async def actualizar(user: UserRequestModel, keyUser: str):
                 "message": "Los datos no se pudieron actualizar",
                 "res": None
             }
-
+    
+    #Empezamos a recibir y enviar datos a la base de datos
     try:
+
+        if key:
         
-        update= {"username": user.username, "password": user.password,
-        "name": user.name, "email": user.email, "phone": user.phone, 
-        "dateOfBirth": user.dateOfBirth, "language": user.language, 
-        "country": user.country, "ypwCashBalance": user.ypwCashBalance, 
-        "shippingAddress": user.shippingAddress,  
-        "identificationCard": user.identificationCard, 
-        "accountVersion": user.accountVersion, 
-        "timeZone": user.timeZone, 
-        "recoveryCode": user.recoveryCode, "applications": user.applications, 
-        "limitations": user.limitations, "accountType": user.accountType, 
-        "tradingExits": user.tradingExits, "pendingInvoices": user.pendingInvoices, 
-        "bills": user.bills, "subscriptions": user.subscriptions, 
-        "metodoPago": user.metodoPago, "servidorDB": user.servidorDB, 
-        "userDB": user.userDB, "puertoDB": user.puertoDB,
-        "pagWeb": user.pagWeb}
+            username= user.username
+            password= user.password
+            name= user.name
+            email= user.email
+            phone= user.phone
+            dateOfBirth= user.dateOfBirth
+            language= user.language
+            country= user.country
+            ypwCashBalance= user.ypwCashBalance
+            shippingAddress= user.shippingAddress 
+            identificationCard= user.identificationCard
+            accountVersion= user.accountVersion
+            timeZone= user.timeZone
+            recoveryCode= user.recoveryCode
+            applications= user.applications
+            limitations= user.limitations
+            accountType= user.accountType
+            tradingExits= user.tradingExits
+            pendingInvoices= user.pendingInvoices
+            bills= user.bills
+            subscriptions= user.subscriptions
+            metodoPago= user.metodoPago
+            servidorDB= user.servidorDB
+            userDB= user.userDB
+            puertoDB= user.puertoDB
+            pagWeb= user.pagWeb
 
-        fecha = datetime.today().strftime('%d-%m-%Y %H:%M:%S')
-        update["accountUpdateDate"]= fecha
+            update= {"username": username, "password": password, "name": name, "email": email, "phone": phone, 
+            "dateOfBirth": dateOfBirth, "language": language, 
+            "country": country, "ypwCashBalance": ypwCashBalance, 
+            "shippingAddress": shippingAddress,  
+            "identificationCard": identificationCard, 
+            "accountVersion": accountVersion, 
+            "timeZone": timeZone, 
+            "recoveryCode": recoveryCode, "applications": applications, 
+            "limitations": limitations, "accountType": accountType, 
+            "tradingExits": tradingExits, "pendingInvoices": pendingInvoices, 
+            "bills": bills, "subscriptions": subscriptions, 
+            "metodoPago": metodoPago, "servidorDB": servidorDB, 
+            "userDB": userDB, "puertoDB": puertoDB,
+            "pagWeb": pagWeb}
 
-        #localZone = datetime.timezone(datetime.timedelta(seconds=-time.timezone))
-        #update["timeZone"]= localZone
+            #localZone = datetime.timezone(datetime.timedelta(seconds=-time.timezone))
+            #update["timeZone"]= localZone
+            conx = connection.execute(users.update().values(update).where(users.c.keyUser == keyUser))
 
-        conx = connection.execute(users.update().values(update).where(users.c.keyUser == keyUser))
-
-        return is_empty(conx)
+            return is_empty(conx)
+        else:
+            return {
+                "error": True,
+                "message": "keyUser inválido: usuario no encontrado.",
+                "res": None
+            }
     except:
         return {
             "error": True,
@@ -306,7 +360,15 @@ async def eliminar(keyUser: str):
 
     try:
         sql = connection.execute(users.delete().where(users.c.keyUser == keyUser))
-        return is_empty(sql)
+
+        if sql:
+            return is_empty(sql)
+        else:
+            return {
+                "error": True,
+                "message": "keyUser inválido: usuario no encontrado.",
+                "res": None 
+            }
     except:
         return {
             "error": True,
@@ -314,6 +376,3 @@ async def eliminar(keyUser: str):
             "res": None
         }
     
-
-#>> Generamos la fecha para introducirla en el modelo 'UserRegistro'
-#fecha = datetime.today().strftime('%d-%m-%Y %H:%M:%S')

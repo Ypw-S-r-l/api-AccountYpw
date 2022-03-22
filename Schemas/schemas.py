@@ -1,8 +1,10 @@
+from datetime import datetime
 from time import *
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import *
 from typing import TypedDict
 from bs4 import BeautifulSoup
+from pymysql import TIMESTAMP
 
 def stripTarget(cadena):
     tex = BeautifulSoup(cadena, features='html.parser').text
@@ -24,6 +26,7 @@ class UserRequestModel(BaseModel):
     ypwCashBalance: Optional[str]= ""
     shippingAddress: dict #JSON
     identificationCard: Optional[str]= ""
+    accountUpdateDate: Optional[datetime]= ""
     accountVersion: Optional[str]= ""
     timeZone: Optional[str]= ""
     recoveryCode: Optional[str]= ""
@@ -59,9 +62,6 @@ class UserRegistro(BaseModel):
 class UserLogin(BaseModel):
     username: str
     keyUser: str
-
-
-
 
 
 
