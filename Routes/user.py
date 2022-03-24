@@ -1,3 +1,5 @@
+from pickle import NONE
+from typing import Optional
 import jwt, re, secrets
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
@@ -115,7 +117,7 @@ async def registrar(user: UserRegistro):
     correo= BeautifulSoup(correo, features='html.parser').text
 
     #Creamos un diccionario con los valores del usuario,
-    newUser = {"username": username, "name": name, "email": correo, "password": password, "accountUpdateDate": None}
+    newUser = {"username": username, "name": name, "email": correo, "password": password}
     
 
     if verificarVacio(newUser) == False:
@@ -124,8 +126,7 @@ async def registrar(user: UserRegistro):
 
             try:
                 #fecha = datetime.today().strftime('%d-%m-%Y %H:%M:%S')
-                #newUser["registrationDate"]= datetime.now()
-
+                newUser["registrationDate"]= None
                 #Generador de token/keyUser
                 name = newUser["name"]
                 secreto = secrets.token_hex(10)
@@ -136,8 +137,7 @@ async def registrar(user: UserRegistro):
                     algorithm='HS256'
                 )
                 #res = jwt.decode(token, secreto, algorithms='HS256')
-                
-                newUser["keyUser"] = token #Pasamos el token generado al campo keyUser
+                newUser["keyUser"]= token #Pasamos el token generado al campo keyUser
 
                 #Conexion a ApiLogin/users(tabla)/insertar valores de NEWUSER
                 peticion = connection.execute(users.insert().values(newUser))
@@ -227,8 +227,8 @@ async def login(login: UserLogin):
                     algorithm='HS256'
                 )
                 #keyDecodificada = jwt.decode(token, key, algorithms='HS256')
-                dataLogin["keyUser"]= token
-                token= dataLogin["keyUser"]
+                #dataLogin["keyUser"]= token
+                #token= dataLogin["keyUser"]
 
                 conx = connection.execute(users.update().values(token).where(users.c.keyUser == llave))
 
@@ -310,7 +310,8 @@ async def actualizar(user: UserRequestModel, keyUser: str):
             "dateOfBirth": dateOfBirth, "language": language, 
             "country": country, "ypwCashBalance": ypwCashBalance, 
             "shippingAddress": shippingAddress,  
-            "identificationCard": identificationCard, 
+            "identificationCard": identificationCard,
+            "accountUpdateDate": "",
             "accountVersion": accountVersion, 
             "timeZone": timeZone, 
             "recoveryCode": recoveryCode, "applications": applications, 
@@ -320,6 +321,8 @@ async def actualizar(user: UserRequestModel, keyUser: str):
             "metodoPago": metodoPago, "servidorDB": servidorDB, 
             "userDB": userDB, "puertoDB": puertoDB,
             "pagWeb": pagWeb}
+
+            #update["accountUpdateDate"]= ""
 
             #localZone = datetime.timezone(datetime.timedelta(seconds=-time.timezone))
             #update["timeZone"]= localZone
