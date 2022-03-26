@@ -102,7 +102,7 @@ async def registrar(user: UserRegistro):
             return salida
         else:
             return error
-
+    
     #Obetenemos el correo introducido por el usuario y lo pasa por validador de Email
     username= user.username.strip()
     username= BeautifulSoup(username, features='html.parser').text
@@ -118,19 +118,20 @@ async def registrar(user: UserRegistro):
 
     #Creamos un diccionario con los valores del usuario,
     newUser = {"username": username, "name": name, "email": correo, "password": password}
-    
+
 
     if verificarVacio(newUser) == False:
         #Empezamos a procesar los datos
         if es_correo_valido(correo) == True:
+            
+            #Verificamos si el email ya ha sido registrado
+            verEmail= connection.execute(users.select().where(users.c.email == correo)).first()
 
             try:
-                #fecha = datetime.today().strftime('%d-%m-%Y %H:%M:%S')
-                newUser["registrationDate"]= None
                 #Generador de token/keyUser
                 name = newUser["name"]
                 secreto = secrets.token_hex(10)
-                
+                    
                 token = jwt.encode(
                     {"key":f"keyUser para {name}"},
                     secreto,
@@ -236,7 +237,7 @@ async def login(login: UserLogin):
             else:
                 return {
                     "error": True,
-                    "message": "Username o Password inválido/s",
+                    "message": "Username y/o Password inválido/s",
                     "res": None
                 }
         else:
@@ -310,8 +311,7 @@ async def actualizar(user: UserRequestModel, keyUser: str):
             "dateOfBirth": dateOfBirth, "language": language, 
             "country": country, "ypwCashBalance": ypwCashBalance, 
             "shippingAddress": shippingAddress,  
-            "identificationCard": identificationCard,
-            "accountUpdateDate": "",
+            "identificationCard": identificationCard, 
             "accountVersion": accountVersion, 
             "timeZone": timeZone, 
             "recoveryCode": recoveryCode, "applications": applications, 
@@ -321,8 +321,6 @@ async def actualizar(user: UserRequestModel, keyUser: str):
             "metodoPago": metodoPago, "servidorDB": servidorDB, 
             "userDB": userDB, "puertoDB": puertoDB,
             "pagWeb": pagWeb}
-
-            #update["accountUpdateDate"]= ""
 
             #localZone = datetime.timezone(datetime.timedelta(seconds=-time.timezone))
             #update["timeZone"]= localZone

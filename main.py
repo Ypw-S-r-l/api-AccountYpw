@@ -1,13 +1,15 @@
 from fastapi import FastAPI
+import uvicorn
 from Database.conexion import engine as connection
 from Routes.user import user
 from fastapi.middleware.cors import CORSMiddleware
 #from Schemas.schemas import UserRequestModel
 
 
-app = FastAPI(title="ApiLogin YPW",
+app = FastAPI(debug=True,
+    title="ApiLogin YPW",
     description="ApiLogin general YPW",
-    version="v0.1")
+    version="v1")
 
 
 #Solucion CORS
@@ -19,6 +21,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+if __name__=='__main__':
+    uvicorn.run(app, host="127.0.0.1", port="8000")
 
 #>> conexion a user de Routes
 app.include_router(user)

@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import unique
 from sqlalchemy import DATETIME, JSON, TEXT, VARCHAR, Table, Column
 from sqlalchemy.sql.sqltypes import Integer, String, TIMESTAMP, DateTime
 from Database.conexion import meta, engine
@@ -10,7 +11,7 @@ users = Table(
     Column('username', String(35), nullable=True), #Mandatory
     Column('password', String(50), nullable=True), #Mandatory
     Column('name', String(50), nullable=True), #Mandatory
-    Column('email', String(65), nullable=True), #Mandatory
+    Column('email', String(65), unique=True), #Mandatory
     Column('phone', String(20), nullable=True),
     Column('dateOfBirth', String(50), nullable=True),
     Column('language', String(50), nullable=True),
