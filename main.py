@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-import uvicorn
+import uvicorn, asyncio
 from Database.conexion import engine as connection
 from Routes.user import user
 from fastapi.middleware.cors import CORSMiddleware

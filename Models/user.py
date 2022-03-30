@@ -1,5 +1,3 @@
-from datetime import datetime
-from enum import unique
 from sqlalchemy import DATETIME, JSON, TEXT, VARCHAR, Table, Column
 from sqlalchemy.sql.sqltypes import Integer, String, TIMESTAMP, DateTime
 from Database.conexion import meta, engine
@@ -8,10 +6,10 @@ from Database.conexion import meta, engine
 users = Table(
     "users", meta,
     Column('userID', Integer, primary_key=True, unique=True, autoincrement=True),
-    Column('username', String(35), nullable=True), #Mandatory
-    Column('password', String(50), nullable=True), #Mandatory
-    Column('name', String(50), nullable=True), #Mandatory
-    Column('email', String(65), unique=True), #Mandatory
+    Column('username', String(35), nullable=False), #Mandatory
+    Column('password', String(50), nullable=False), #Mandatory
+    Column('name', String(50), nullable=False), #Mandatory
+    Column('email', String(65), unique=False), #Mandatory
     Column('phone', String(20), nullable=True),
     Column('dateOfBirth', String(50), nullable=True),
     Column('language', String(50), nullable=True),

@@ -13,5 +13,13 @@
             "username": "root",
             "name": "apilogin"
         }
+    ],
+    "python.analysis.extraPaths": [
+        "from peewee import *",
+        "MydbSQLite",
+        "mypokedex",
+        "MySQLiteDatabase",
+        "MySQLDatabase",
+        "./app"
     ]
 }

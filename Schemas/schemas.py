@@ -10,8 +10,6 @@ def stripTarget(cadena):
     return tex
 
 
-
-#subscription: List[str] = []
 #***** MODELO CLIENTE: solicitud *****
 class UserRequestModel(BaseModel):
     username: Optional[str]= ""
@@ -59,27 +57,4 @@ class UserRegistro(BaseModel):
 #***** LOGIN ****** modelo
 class UserLogin(BaseModel):
     username: str
-    keyUser: str
-
-
-
-
-
-
-
-
-#***** ACTUALIZAR: datos personales ****** modelo
-class dataPersonalUpdate(BaseModel):
-    username: str
     password: str
-    name: str
-    email: str
-    phone: str
-    dateOfBirth: str
-    language: str
-    country: str
-
-#***** ACTUALIZAR: datos generales ****** modelo
-class dataGeneralUpdate(BaseModel):
-    ypwCashBalance: str
-    shippingAddress: str

@@ -1,5 +1,3 @@
-from pickle import NONE
-from typing import Optional
 import jwt, re, secrets
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
@@ -22,14 +20,13 @@ async def root():
 def verificarVacio(x):
     for i in x.values():
         if len(i) == 0:
-            print(">> Vacio")
             return True
         else:
-            print(">> No vacio")
             return False
 
 
 #--------- ruta: OBTENER DATOS ---------
+"""
 @user.get('/api/v1/getData', tags=["Usuario"])
 async def obtenerDatos():
     
@@ -56,11 +53,11 @@ async def obtenerDatos():
             "message": "Internal error server: la peticion no se pudo procesar",
             "res": None
         }
-
+"""
 
 #--------- ruta: OBTENER USUARIO --------
-@user.get('/api/v1/getUser/{userID}', tags=['Usuario'])
-async def obtenerUsuario(userID: int):
+@user.get('/api/v1/getUser/{keyUser}', tags=['Usuario'])
+async def obtenerUsuario(keyUser: str):
 
     def is_empty(data_structure):
         if data_structure:
@@ -77,7 +74,7 @@ async def obtenerUsuario(userID: int):
             }
 
     try:
-        response = connection.execute(users.select().where(users.c.userID == userID)).first()
+        response = connection.execute(users.select().where(users.c.keyUser == keyUser)).first()
         return is_empty(response)
     except:
         return {
@@ -85,7 +82,6 @@ async def obtenerUsuario(userID: int):
             "message": "Internal error server: ha ocurrido un problema con la peticion",
             "res": None
         }
-
 
 #********* ruta: REGISTRAR USUARIO *********
 @user.post('/api/v1/register', tags=['Usuario'])
@@ -120,18 +116,19 @@ async def registrar(user: UserRegistro):
     newUser = {"username": username, "name": name, "email": correo, "password": password}
 
 
-    if verificarVacio(newUser) == False:
-        #Empezamos a procesar los datos
-        if es_correo_valido(correo) == True:
-            
-            #Verificamos si el email ya ha sido registrado
-            verEmail= connection.execute(users.select().where(users.c.email == correo)).first()
+    try:
 
-            try:
+        if verificarVacio(newUser) == False:
+            #Empezamos a procesar los datos
+            if es_correo_valido(correo) == True:
+                
+                #Verificamos si el email ya ha sido registrado
+                verEmail= connection.execute(users.select().where(users.c.email == correo)).first()
+
                 #Generador de token/keyUser
                 name = newUser["name"]
                 secreto = secrets.token_hex(10)
-                    
+                        
                 token = jwt.encode(
                     {"key":f"keyUser para {name}"},
                     secreto,
@@ -158,22 +155,22 @@ async def registrar(user: UserRegistro):
                     "res": None
                 }
                 return is_empty(peticion, salida, error)
-            except:
+            else:
                 return {
                     "error": True,
-                    "message": "Ocurrió un problema en la peticion.",
+                    "message": "Correo electronico invalido.",
                     "res": None
                 }
         else:
             return {
                 "error": True,
-                "message": "Correo electronico invalido.",
+                "message": "Existen campos vacios.",
                 "res": None
             }
-    else:
+    except:
         return {
             "error": True,
-            "message": "Existen campos vacios.",
+            "message": "Ocurrió un problema en la peticion.",
             "res": None
         }
 
@@ -203,23 +200,23 @@ async def login(login: UserLogin):
         username= login.username.strip()
         username= BeautifulSoup(username, features='html.parser').text
         
-        keyUser= login.keyUser.strip()
-        keyUser= BeautifulSoup(keyUser, features='html.parser').text
+        password= login.password.strip()
+        password= BeautifulSoup(password, features='html.parser').text
 
         #Recogemos los datos del usuario con el modelo 'UserLogin'
-        dataLogin = {"username": username, "keyUser": keyUser}
+        dataLogin = {"username": username, "password": password}
 
         if verificarVacio(dataLogin) == False:
 
             #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario
-            llave = connection.execute(users.select().where(users.c.keyUser == login.keyUser)).first()
+            passw = connection.execute(users.select().where(users.c.password == login.password)).first()
             uName = connection.execute(users.select().where(users.c.username == login.username)).first()
 
             #Verificamos con un if si el usuario ingreso correctamente sus credenciales
-            if llave and uName:
+            if passw and uName:
 
                 #Generador de token/keyUser
-                payload = dataLogin["username"]
+                payload= secrets.token_hex(10)
                 key = secrets.token_hex(10)
 
                 token = jwt.encode(
@@ -228,10 +225,8 @@ async def login(login: UserLogin):
                     algorithm='HS256'
                 )
                 #keyDecodificada = jwt.decode(token, key, algorithms='HS256')
-                #dataLogin["keyUser"]= token
-                #token= dataLogin["keyUser"]
 
-                conx = connection.execute(users.update().values(token).where(users.c.keyUser == llave))
+                conx= connection.execute(users.update().values(keyUser= token).where(users.c.password == password))
 
                 return is_empty(conx)
             else:
@@ -253,7 +248,7 @@ async def login(login: UserLogin):
             "res": None
         }
 
-
+"""
 #********* ruta: ACTUALIZAR *********
 @user.put("/api/v1/actualizar/{keyUser}", tags=["Usuario"])
 async def actualizar(user: UserRequestModel, keyUser: str):
@@ -310,21 +305,16 @@ async def actualizar(user: UserRequestModel, keyUser: str):
             update= {"username": username, "password": password, "name": name, "email": email, "phone": phone, 
             "dateOfBirth": dateOfBirth, "language": language, 
             "country": country, "ypwCashBalance": ypwCashBalance, 
-            "shippingAddress": shippingAddress,  
-            "identificationCard": identificationCard, 
-            "accountVersion": accountVersion, 
-            "timeZone": timeZone, 
+            "shippingAddress": shippingAddress, "identificationCard": identificationCard, 
+            "accountVersion": accountVersion, "timeZone": timeZone, 
             "recoveryCode": recoveryCode, "applications": applications, 
             "limitations": limitations, "accountType": accountType, 
             "tradingExits": tradingExits, "pendingInvoices": pendingInvoices, 
             "bills": bills, "subscriptions": subscriptions, 
             "metodoPago": metodoPago, "servidorDB": servidorDB, 
-            "userDB": userDB, "puertoDB": puertoDB,
-            "pagWeb": pagWeb}
+            "userDB": userDB, "puertoDB": puertoDB, "pagWeb": pagWeb}
 
-            #localZone = datetime.timezone(datetime.timedelta(seconds=-time.timezone))
-            #update["timeZone"]= localZone
-            conx = connection.execute(users.update().values(update).where(users.c.keyUser == keyUser))
+            conx= connection.execute(users.update().values(update).where(users.c.keyUser == keyUser))
 
             return is_empty(conx)
         else:
@@ -339,9 +329,10 @@ async def actualizar(user: UserRequestModel, keyUser: str):
             "message": "La peticion no pudo ser procesada.",
             "res": None
         }
-
+"""
 
 #********* ruta: ELIMINAR *********
+"""
 @user.delete("/api/v1/delete/{keyUser}", tags=["Usuario"])
 async def eliminar(keyUser: str):
 
@@ -376,4 +367,4 @@ async def eliminar(keyUser: str):
             "message": "La peticion no pudo ser procesada.",
             "res": None
         }
-    
+"""
