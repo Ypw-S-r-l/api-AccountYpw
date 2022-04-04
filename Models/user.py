@@ -6,10 +6,10 @@ from Database.conexion import meta, engine
 users = Table(
     "users", meta,
     Column('userID', Integer, primary_key=True, unique=True, autoincrement=True),
-    Column('username', String(35), nullable=False), #Mandatory
+    Column('username', String(35), nullable=False, unique=True), #Mandatory
     Column('password', String(50), nullable=False), #Mandatory
     Column('name', String(50), nullable=False), #Mandatory
-    Column('email', String(65), unique=False), #Mandatory
+    Column('email', String(65), nullable=False, unique=True), #Mandatory
     Column('phone', String(20), nullable=True),
     Column('dateOfBirth', String(50), nullable=True),
     Column('language', String(50), nullable=True),

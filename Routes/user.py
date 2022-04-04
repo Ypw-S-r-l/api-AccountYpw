@@ -1,11 +1,14 @@
 import jwt, re, secrets
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from bs4 import BeautifulSoup
+from sqlalchemy import text
 from Database.conexion import conn as connection
+#from Database.conexion import cursor
 from Models.index import users
 from Schemas.schemas import UserLogin, UserRegistro, UserRequestModel
 from fastapi.responses import JSONResponse
 from datetime import datetime
+from cryptography.fernet import Fernet
 
 user = APIRouter()
 
@@ -24,6 +27,8 @@ def verificarVacio(x):
         else:
             return False
 
+key= Fernet.generate_key()
+f= Fernet(key)
 
 #--------- ruta: OBTENER DATOS ---------
 """
@@ -87,19 +92,13 @@ async def obtenerUsuario(keyUser: str):
 @user.post('/api/v1/register', tags=['Usuario'])
 async def registrar(user: UserRegistro):
 
+        
     #Validando email: expresiones regulares
     def es_correo_valido(correo):
         expresion_regular = r"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"
         return re.match(expresion_regular, correo) is not None
-
-    #Validando que la connection sea True
-    def is_empty(data_structure, salida, error):
-        if data_structure:
-            return salida
-        else:
-            return error
     
-    #Obetenemos el correo introducido por el usuario y lo pasa por validador de Email
+    #Obtenemos el correo introducido por el usuario y lo pasa por validador de Email
     username= user.username.strip()
     username= BeautifulSoup(username, features='html.parser').text
 
@@ -114,7 +113,8 @@ async def registrar(user: UserRegistro):
 
     #Creamos un diccionario con los valores del usuario,
     newUser = {"username": username, "name": name, "email": correo, "password": password}
-
+    
+    #cursor= connection.connection.cursor()
 
     try:
 
@@ -123,38 +123,39 @@ async def registrar(user: UserRegistro):
             if es_correo_valido(correo) == True:
                 
                 #Verificamos si el email ya ha sido registrado
-                verEmail= connection.execute(users.select().where(users.c.email == correo)).first()
+                Qsql= text("SELECT email, username FROM users WHERE email=:email AND username=:username")
+                verRegistro= connection.execute(Qsql, email=correo, username=username).first()
+                print(verRegistro)
 
-                #Generador de token/keyUser
-                name = newUser["name"]
-                secreto = secrets.token_hex(10)
+                #verL= connection.execute("SELECT email, username FROM users WHERE email=%s AND username=%s", (correo, username))
+                
+                if verRegistro == None:
+
+                    #Generador de token/keyUser
+                    name= newUser["name"]
+                    payload= secrets.token_hex(10)
+                    secreto= secrets.token_hex(10)
                         
-                token = jwt.encode(
-                    {"key":f"keyUser para {name}"},
-                    secreto,
-                    algorithm='HS256'
-                )
-                #res = jwt.decode(token, secreto, algorithms='HS256')
-                newUser["keyUser"]= token #Pasamos el token generado al campo keyUser
+                    token = jwt.encode(
+                        {"pKey": payload},
+                        secreto,
+                        algorithm='HS256'
+                    )
+                    newUser["keyUser"]= token #Pasamos el token generado al campo keyUser
 
-                #Conexion a ApiLogin/users(tabla)/insertar valores de NEWUSER
-                peticion = connection.execute(users.insert().values(newUser))
-
-                salida= {
-                    "error": False,
-                    "message": "Usuario agregado correctamente",
-                    "res": {
-                        "name": name,
-                        "keyUser": token
+                    #Conexion a ApiLogin/users(tabla)/insertar valores de NEWUSER
+                    peticion= connection.execute(users.insert().values(newUser))
+                    return {
+                        "error": False,
+                        "message": "Usuario agregado correctamente.",
+                        "res": name
                     }
-                }
-
-                error= {
-                    "error": False,
-                    "message": "Usuario no se pudo agregar",
-                    "res": None
-                }
-                return is_empty(peticion, salida, error)
+                else:
+                    return {
+                        "error": True,
+                        "message": "El usuario que intenta registrar ya existe.",
+                        "res": None
+                    }
             else:
                 return {
                     "error": True,
@@ -170,7 +171,7 @@ async def registrar(user: UserRegistro):
     except:
         return {
             "error": True,
-            "message": "Ocurrió un problema en la peticion.",
+            "message": "Ocurrio un problema en la peticion.",
             "res": None
         }
 
@@ -196,39 +197,40 @@ async def login(login: UserLogin):
                 "res": None
             }
 
-    try:
-        username= login.username.strip()
-        username= BeautifulSoup(username, features='html.parser').text
+    username= login.username.strip()
+    username= BeautifulSoup(username, features='html.parser').text
         
-        password= login.password.strip()
-        password= BeautifulSoup(password, features='html.parser').text
+    password= login.password.strip()
+    password= BeautifulSoup(password, features='html.parser').text
 
-        #Recogemos los datos del usuario con el modelo 'UserLogin'
-        dataLogin = {"username": username, "password": password}
+    #Recogemos los datos del usuario con el modelo 'UserLogin'
+    dataLogin = {"username": username, "password": password}
 
+    try:
         if verificarVacio(dataLogin) == False:
 
             #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario
-            passw = connection.execute(users.select().where(users.c.password == login.password)).first()
-            uName = connection.execute(users.select().where(users.c.username == login.username)).first()
+            Qsql= text("SELECT email, username FROM users WHERE password=:password AND username=:username")
+            verLogin= connection.execute(Qsql, username=username, password= password).first()
+            print(verLogin)
 
             #Verificamos con un if si el usuario ingreso correctamente sus credenciales
-            if passw and uName:
+            if verLogin != None:
 
                 #Generador de token/keyUser
+                #NpUsuario= f.encrypt(uName + passw)
                 payload= secrets.token_hex(10)
                 key = secrets.token_hex(10)
 
                 token = jwt.encode(
-                    {"key":f"keyUser para {payload}"},
+                    {"key": payload},
                     key,
                     algorithm='HS256'
                 )
                 #keyDecodificada = jwt.decode(token, key, algorithms='HS256')
-
                 conx= connection.execute(users.update().values(keyUser= token).where(users.c.password == password))
 
-                return is_empty(conx)
+                return "Inicio de seccion correctamente."
             else:
                 return {
                     "error": True,
@@ -244,14 +246,14 @@ async def login(login: UserLogin):
     except:
         return {
             "error": True,
-            "message": "Internal error server: no se pudo procesar la peticion.",
+            "message": "Ocurrio un problema en la peticion.",
             "res": None
         }
 
 """
 #********* ruta: ACTUALIZAR *********
 @user.put("/api/v1/actualizar/{keyUser}", tags=["Usuario"])
-async def actualizar(user: UserRequestModel, keyUser: str):
+def actualizar(user: UserRequestModel, keyUser: str):
 
     #loginKey= {"keyUser": UserUpdate.keyUser}
     key = connection.execute(users.select().where(users.c.keyUser == keyUser)).first()
@@ -334,7 +336,7 @@ async def actualizar(user: UserRequestModel, keyUser: str):
 #********* ruta: ELIMINAR *********
 """
 @user.delete("/api/v1/delete/{keyUser}", tags=["Usuario"])
-async def eliminar(keyUser: str):
+def eliminar(keyUser: str):
 
     def is_empty(data_structure):
         if data_structure:

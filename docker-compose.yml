@@ -1,9 +1,7 @@
-version: '2.3.3'
+version: '3.10'
 services:
-    core_api:
+    app:
         build: .
-        container_name: "core-api-container"
+        command: uvicorn app.main:app --host 0.0.0.0 --reload
         ports:
-            - "8000"
-        volumes:
-            - ./main/:/app
+            - "8000:8000"
