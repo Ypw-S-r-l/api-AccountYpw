@@ -2,6 +2,7 @@ version: '3.10'
 services:
     app:
         build: .
-        command: uvicorn app.main:app --host 0.0.0.0 --reload
+        container_name: exp1
+        command: uvicorn app.main:app --proxy-headers --host 0.0.0.0 --port 8000
         ports:
             - "8000:8000"

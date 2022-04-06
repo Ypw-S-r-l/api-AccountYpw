@@ -13,6 +13,15 @@ from cryptography.fernet import Fernet
 user = APIRouter()
 
 
+@user.on_event("startup")
+async def startup():
+    connection.connect()
+
+@user.on_event("shutdown")
+async def shutdown():
+    connection.disconnect()
+
+
 #--------- ruta: root ---------
 @user.get('/', tags=["Welcome"])
 async def root():
@@ -116,62 +125,54 @@ async def registrar(user: UserRegistro):
     
     #cursor= connection.connection.cursor()
 
-    try:
-
-        if verificarVacio(newUser) == False:
-            #Empezamos a procesar los datos
-            if es_correo_valido(correo) == True:
-                
-                #Verificamos si el email ya ha sido registrado
-                Qsql= text("SELECT email, username FROM users WHERE email=:email AND username=:username")
-                verRegistro= connection.execute(Qsql, email=correo, username=username).first()
-                print(verRegistro)
+    if verificarVacio(newUser) == False:
+        #Empezamos a procesar los datos
+        if es_correo_valido(correo) == True:
+            
+            #Verificamos si el email ya ha sido registrado
+            Qsql= text("SELECT email, username FROM users WHERE email=:email OR username=:username")
+            verRegistro= connection.execute(Qsql, email=correo.strip(), username=username.strip()).first()
+            print(verRegistro)
 
                 #verL= connection.execute("SELECT email, username FROM users WHERE email=%s AND username=%s", (correo, username))
                 
-                if verRegistro == None:
+            if verRegistro == None:
 
-                    #Generador de token/keyUser
-                    name= newUser["name"]
-                    payload= secrets.token_hex(10)
-                    secreto= secrets.token_hex(10)
-                        
-                    token = jwt.encode(
-                        {"pKey": payload},
-                        secreto,
-                        algorithm='HS256'
-                    )
-                    newUser["keyUser"]= token #Pasamos el token generado al campo keyUser
+                #Generador de token/keyUser
+                name= newUser["name"]
+                payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
+                secreto= secrets.token_hex(10)
+                    
+                token = jwt.encode(
+                    {"pKey": payload},
+                    secreto,
+                    algorithm='HS256'
+                )
+                newUser["keyUser"]= token #Pasamos el token generado al campo keyUser
 
-                    #Conexion a ApiLogin/users(tabla)/insertar valores de NEWUSER
-                    peticion= connection.execute(users.insert().values(newUser))
-                    return {
-                        "error": False,
-                        "message": "Usuario agregado correctamente.",
-                        "res": name
-                    }
-                else:
-                    return {
-                        "error": True,
-                        "message": "El usuario que intenta registrar ya existe.",
-                        "res": None
-                    }
+                #Conexion a ApiLogin/users(tabla)/insertar valores de NEWUSER
+                peticion= connection.execute(users.insert().values(newUser))
+                return {
+                    "error": False,
+                    "message": "Usuario agregado correctamente.",
+                    "res": name
+                }
             else:
                 return {
                     "error": True,
-                    "message": "Correo electronico invalido.",
+                    "message": "El usuario que intenta registrar ya existe.",
                     "res": None
                 }
         else:
             return {
                 "error": True,
-                "message": "Existen campos vacios.",
+                "message": "Correo electronico invalido.",
                 "res": None
             }
-    except:
+    else:
         return {
             "error": True,
-            "message": "Ocurrio un problema en la peticion.",
+            "message": "Existen campos vacios.",
             "res": None
         }
 
@@ -212,14 +213,13 @@ async def login(login: UserLogin):
             #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario
             Qsql= text("SELECT email, username FROM users WHERE password=:password AND username=:username")
             verLogin= connection.execute(Qsql, username=username, password= password).first()
-            print(verLogin)
 
             #Verificamos con un if si el usuario ingreso correctamente sus credenciales
             if verLogin != None:
 
                 #Generador de token/keyUser
                 #NpUsuario= f.encrypt(uName + passw)
-                payload= secrets.token_hex(10)
+                payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
                 key = secrets.token_hex(10)
 
                 token = jwt.encode(
@@ -227,10 +227,21 @@ async def login(login: UserLogin):
                     key,
                     algorithm='HS256'
                 )
-                #keyDecodificada = jwt.decode(token, key, algorithms='HS256')
-                conx= connection.execute(users.update().values(keyUser= token).where(users.c.password == password))
 
-                return "Inicio de seccion correctamente."
+                try:
+                    #keyDecodificada = jwt.decode(token, key, algorithms='HS256')
+                    conx= connection.execute(users.update().values(keyUser= token).where(users.c.password == password))
+                    return {
+                        "error": False,
+                        "message":"Inicio de seccion correctamente.",
+                        "res": token
+                    }
+                except:
+                    return {
+                        "error": True,
+                        "message":"No se pudo ejecutar la peticion.",
+                        "res": None
+                    }
             else:
                 return {
                     "error": True,
