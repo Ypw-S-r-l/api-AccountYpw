@@ -1,3 +1,4 @@
+from lib2to3.pgen2 import token
 import jwt, re, secrets
 from fastapi import APIRouter, Response
 from bs4 import BeautifulSoup
@@ -67,7 +68,7 @@ async def obtenerDatos():
 
 #--------- ruta: OBTENER USUARIO --------
 @user.get('/api/v1/getUser/{keyUser}', tags=['Usuario'])
-def obtenerUsuario(keyUser: str):
+async def obtenerUsuario(keyUser: str):
 
     def is_empty(data_structure):
         if data_structure:
@@ -95,7 +96,7 @@ def obtenerUsuario(keyUser: str):
 
 #********* ruta: REGISTRAR USUARIO *********
 @user.post('/api/v1/register', tags=['Usuario'])
-def registrar(user: UserRegistro):
+async def registrar(user: UserRegistro):
 
         
     #Validando email: expresiones regulares
@@ -136,13 +137,15 @@ def registrar(user: UserRegistro):
                 #Generador de token/keyUser
                 name= newUser["name"]
                 payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
-                secreto= secrets.token_hex(10)
+                secreto= secrets.token_hex(10) + payload
+                token= f.encrypt(secreto)
+                print(token)
                     
-                token = jwt.encode(
-                    {"pKey": payload},
-                    secreto,
-                    algorithm='HS256'
-                )
+                #token = jwt.encode(
+                #    {"pKey": payload},
+                #    secreto,
+                #    algorithm='HS256'
+                #)
                 newUser["keyUser"]= token #Pasamos el token generado al campo keyUser
 
                 #Conexion a ApiLogin/users(tabla)/insertar valores de NEWUSER
@@ -174,7 +177,7 @@ def registrar(user: UserRegistro):
 
 #********* ruta: LOGIN *********
 @user.post("/api/v1/login", tags=["Usuario"])
-def login(login: UserLogin):
+async def login(login: UserLogin):
 
     #Validando que la connection sea True
     def is_empty(con):
@@ -213,15 +216,16 @@ def login(login: UserLogin):
             if verLogin != None:
 
                 #Generador de token/keyUser
-                #NpUsuario= f.encrypt(uName + passw)
                 payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
-                key = secrets.token_hex(10)
+                key = secrets.token_hex(10) + payload
 
-                token = jwt.encode(
-                    {"key": payload},
-                    key,
-                    algorithm='HS256'
-                )
+                #token = jwt.encode(
+                #    {"key": payload},
+                #    key,
+                #    algorithm='HS256'
+                #)
+                token= f.encrypt(key)
+                print(token)
 
                 try:
                     #keyDecodificada = jwt.decode(token, key, algorithms='HS256')
