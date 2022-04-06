@@ -17,10 +17,6 @@ user = APIRouter()
 async def startup():
     connection.connect()
 
-@user.on_event("shutdown")
-async def shutdown():
-    connection.disconnect()
-
 
 #--------- ruta: root ---------
 @user.get('/', tags=["Welcome"])
@@ -71,7 +67,7 @@ async def obtenerDatos():
 
 #--------- ruta: OBTENER USUARIO --------
 @user.get('/api/v1/getUser/{keyUser}', tags=['Usuario'])
-async def obtenerUsuario(keyUser: str):
+def obtenerUsuario(keyUser: str):
 
     def is_empty(data_structure):
         if data_structure:
@@ -99,7 +95,7 @@ async def obtenerUsuario(keyUser: str):
 
 #********* ruta: REGISTRAR USUARIO *********
 @user.post('/api/v1/register', tags=['Usuario'])
-async def registrar(user: UserRegistro):
+def registrar(user: UserRegistro):
 
         
     #Validando email: expresiones regulares
@@ -134,7 +130,6 @@ async def registrar(user: UserRegistro):
             verRegistro= connection.execute(Qsql, email=correo.strip(), username=username.strip()).first()
             print(verRegistro)
 
-                #verL= connection.execute("SELECT email, username FROM users WHERE email=%s AND username=%s", (correo, username))
                 
             if verRegistro == None:
 
@@ -155,7 +150,7 @@ async def registrar(user: UserRegistro):
                 return {
                     "error": False,
                     "message": "Usuario agregado correctamente.",
-                    "res": name
+                    "res": None
                 }
             else:
                 return {
@@ -179,14 +174,14 @@ async def registrar(user: UserRegistro):
 
 #********* ruta: LOGIN *********
 @user.post("/api/v1/login", tags=["Usuario"])
-async def login(login: UserLogin):
+def login(login: UserLogin):
 
     #Validando que la connection sea True
     def is_empty(con):
         if con:
             return {
                 "error": False,
-                "message": "Usuario encontrado",
+                "message": "Inicio de seccion correctamente",
                 "res": {
                     "keyUser": token
                 }
@@ -231,11 +226,7 @@ async def login(login: UserLogin):
                 try:
                     #keyDecodificada = jwt.decode(token, key, algorithms='HS256')
                     conx= connection.execute(users.update().values(keyUser= token).where(users.c.password == password))
-                    return {
-                        "error": False,
-                        "message":"Inicio de seccion correctamente.",
-                        "res": token
-                    }
+                    return is_empty(conx)
                 except:
                     return {
                         "error": True,
