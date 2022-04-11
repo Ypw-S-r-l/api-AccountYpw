@@ -58,3 +58,8 @@ class UserRegistro(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+
+
+#**** OBTENER USUARIO **** modelo
+class UserObtener(BaseModel):
+    keyUser: str

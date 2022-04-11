@@ -6,7 +6,7 @@ from sqlalchemy import text
 from Database.conexion import conn as connection
 #from Database.conexion import cursor
 from Models.index import users
-from Schemas.schemas import UserLogin, UserRegistro, UserRequestModel
+from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserRequestModel
 from fastapi.responses import JSONResponse
 from datetime import datetime
 from cryptography.fernet import Fernet
@@ -67,8 +67,8 @@ async def obtenerDatos():
 """
 
 #--------- ruta: OBTENER USUARIO --------
-@user.get('/api/v1/getUser/{keyUser}', tags=['Usuario'])
-async def obtenerUsuario(keyUser: str):
+@user.post('/api/v1/getUser', tags=['Usuario'])
+async def obtenerUsuario(user: UserObtener):
 
     def is_empty(data_structure):
         if data_structure:
@@ -83,6 +83,9 @@ async def obtenerUsuario(keyUser: str):
                 "message": "Usuario no existente",
                 "res": None
             }
+    
+    keyUser= user.keyUser
+    keyUser= BeautifulSoup(keyUser, features='html.parser').text
 
     try:
         response = connection.execute(users.select().where(users.c.keyUser == keyUser)).first()
