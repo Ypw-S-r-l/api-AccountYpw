@@ -135,11 +135,9 @@ async def registrar(user: UserRegistro):
             if verRegistro == None:
 
                 #Generador de token/keyUser
-                name= newUser["name"]
                 payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
                 secreto= secrets.token_hex(10) + payload
                 token= f.encrypt(secreto.encode("utf-8"))
-                print(token)
                     
                 #token = jwt.encode(
                 #    {"pKey": payload},
@@ -225,7 +223,6 @@ async def login(login: UserLogin):
                 #    algorithm='HS256'
                 #)
                 token= f.encrypt(key.encode("utf-8"))
-                print(token)
 
                 try:
                     #keyDecodificada = jwt.decode(token, key, algorithms='HS256')
