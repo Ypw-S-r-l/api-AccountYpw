@@ -1,17 +1,15 @@
-from lib2to3.pgen2 import token
 import jwt, re, secrets
-from fastapi import APIRouter, Response
+from fastapi import APIRouter
 from bs4 import BeautifulSoup
 from sqlalchemy import text
 from Database.conexion import conn as connection
-#from Database.conexion import cursor
 from Models.index import users
-from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserRequestModel
-from fastapi.responses import JSONResponse
+from Schemas.schemas import UserLogin, UserObtener, UserRegistro
 from datetime import datetime
 from cryptography.fernet import Fernet
 
-user = APIRouter()
+user = APIRouter(
+    prefix="/api/v1")
 
 
 @user.on_event("startup")
@@ -33,8 +31,10 @@ def verificarVacio(x):
         else:
             return False
 
+#Para generar keyUser
 key= Fernet.generate_key()
 f= Fernet(key)
+
 
 #--------- ruta: OBTENER DATOS ---------
 """
@@ -67,7 +67,7 @@ async def obtenerDatos():
 """
 
 #--------- ruta: OBTENER USUARIO --------
-@user.post('/api/v1/getUser', tags=['Usuario'])
+@user.get('/api/v1/getUser', tags=['Usuario'])
 async def obtenerUsuario(user: UserObtener):
 
     def is_empty(data_structure):

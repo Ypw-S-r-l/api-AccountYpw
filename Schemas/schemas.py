@@ -63,3 +63,7 @@ class UserLogin(BaseModel):
 #**** OBTENER USUARIO **** modelo
 class UserObtener(BaseModel):
     keyUser: str
+
+
+
+#**** MODELOS DE ERRORES HTTPEXCEPTION **** modelo

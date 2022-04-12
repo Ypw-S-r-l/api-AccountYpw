@@ -1,8 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 import uvicorn, asyncio
 from Database.conexion import engine as connection
 from Routes.user import user
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 #from Schemas.schemas import UserRequestModel
 
 description = """
@@ -28,6 +30,15 @@ app = FastAPI(debug=True,
     })
 
 
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return JSONResponse({
+        "error": True,
+        "message": "Ruta invalida.",
+        "res": None,
+        }
+    )
+
 #Solucion CORS
 origins = ["*"]
 app.add_middleware(
@@ -37,7 +48,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
- 
+
 if __name__=='__main__':
     uvicorn.run(app, host="0.0.0.0", port="8000")
 
