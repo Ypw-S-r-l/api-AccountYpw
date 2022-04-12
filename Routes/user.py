@@ -8,8 +8,7 @@ from Schemas.schemas import UserLogin, UserObtener, UserRegistro
 from datetime import datetime
 from cryptography.fernet import Fernet
 
-user = APIRouter(
-    prefix="/api/v1")
+user = APIRouter()
 
 
 @user.on_event("startup")
@@ -67,7 +66,7 @@ async def obtenerDatos():
 """
 
 #--------- ruta: OBTENER USUARIO --------
-@user.get('/api/v1/getUser', tags=['Usuario'])
+@user.post('/api/v1/getUser', tags=['Usuario'])
 async def obtenerUsuario(user: UserObtener):
 
     def is_empty(data_structure):
