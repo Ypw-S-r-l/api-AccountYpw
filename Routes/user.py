@@ -1,4 +1,4 @@
-import jwt, re, secrets
+import jwt, re, secrets, base64
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
 from sqlalchemy import text
@@ -34,12 +34,6 @@ def verificarVacio(x):
 key= Fernet.generate_key()
 f= Fernet(key)
 
-#Funcion para encriptar la contraseña
-def encryptPassword(password):
-    pw= f.encrypt(password.encode("utf-8"))
-    return pw
-
-    
 
 #--------- ruta: OBTENER DATOS ---------
 """
@@ -72,7 +66,7 @@ async def obtenerDatos():
 """
 
 #--------- ruta: OBTENER USUARIO --------
-@user.post('/api/v1/getUser', response_model=UserObtener, status_code=200, tags=['Usuario'])
+@user.post('/api/v1/getUser', status_code=200, tags=['Usuario'])
 async def obtenerUsuario(user: UserObtener):
 
     def is_empty(data_structure):
@@ -103,7 +97,7 @@ async def obtenerUsuario(user: UserObtener):
         }
 
 #********* ruta: REGISTRAR USUARIO *********
-@user.post('/api/v1/register', response_model=UserRegistro, status_code=200, tags=['Usuario'])
+@user.post('/api/v1/register', status_code=200, tags=['Usuario'])
 async def registrar(user: UserRegistro):
 
 
@@ -121,7 +115,7 @@ async def registrar(user: UserRegistro):
 
     password= user.password.strip()
     password= BeautifulSoup(password, features='html.parser').text
-    passw = encryptPassword(password)
+    passw= base64.b64encode(password.encode("utf-8"))
 
     correo= user.email.strip()
     correo= BeautifulSoup(correo, features='html.parser').text
@@ -138,7 +132,6 @@ async def registrar(user: UserRegistro):
             #Verificamos si el email ya ha sido registrado
             Qsql= text("SELECT email, username FROM users WHERE email=:email OR username=:username")
             verRegistro= connection.execute(Qsql, email=correo.strip(), username=username.strip()).first()
-            print(verRegistro)
 
                 
             if verRegistro == None:
@@ -183,7 +176,7 @@ async def registrar(user: UserRegistro):
 
 
 #********* ruta: LOGIN *********
-@user.post("/api/v1/login", response_model=UserLogin, status_code=200, tags=["Usuario"])
+@user.post("/api/v1/login", status_code=200, tags=["Usuario"])
 async def login(login: UserLogin):
 
     #Validando que la connection sea True
@@ -208,7 +201,7 @@ async def login(login: UserLogin):
         
     password= login.password.strip()
     password= BeautifulSoup(password, features='html.parser').text
-    passw= encryptPassword(password)
+    passw= base64.b64encode(password.encode("utf-8"))
 
     #Recogemos los datos del usuario con el modelo 'UserLogin'
     dataLogin = {"username": username, "password": passw}
