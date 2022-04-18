@@ -34,6 +34,12 @@ def verificarVacio(x):
 key= Fernet.generate_key()
 f= Fernet(key)
 
+#Funcion para encriptar la contraseña
+def encryptPassword(password):
+    pw= f.encrypt(password.encode("utf-8"))
+    return pw
+
+    
 
 #--------- ruta: OBTENER DATOS ---------
 """
@@ -66,7 +72,7 @@ async def obtenerDatos():
 """
 
 #--------- ruta: OBTENER USUARIO --------
-@user.post('/api/v1/getUser', tags=['Usuario'])
+@user.post('/api/v1/getUser', response_model=UserObtener, status_code=200, tags=['Usuario'])
 async def obtenerUsuario(user: UserObtener):
 
     def is_empty(data_structure):
@@ -97,10 +103,10 @@ async def obtenerUsuario(user: UserObtener):
         }
 
 #********* ruta: REGISTRAR USUARIO *********
-@user.post('/api/v1/register', tags=['Usuario'])
+@user.post('/api/v1/register', response_model=UserRegistro, status_code=200, tags=['Usuario'])
 async def registrar(user: UserRegistro):
 
-        
+
     #Validando email: expresiones regulares
     def es_correo_valido(correo):
         expresion_regular = r"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"
@@ -115,12 +121,13 @@ async def registrar(user: UserRegistro):
 
     password= user.password.strip()
     password= BeautifulSoup(password, features='html.parser').text
+    passw = encryptPassword(password)
 
     correo= user.email.strip()
     correo= BeautifulSoup(correo, features='html.parser').text
 
     #Creamos un diccionario con los valores del usuario,
-    newUser = {"username": username, "name": name, "email": correo, "password": password}
+    newUser = {"username": username, "name": name, "email": correo, "password": passw}
     
     #cursor= connection.connection.cursor()
 
@@ -176,7 +183,7 @@ async def registrar(user: UserRegistro):
 
 
 #********* ruta: LOGIN *********
-@user.post("/api/v1/login", tags=["Usuario"])
+@user.post("/api/v1/login", response_model=UserLogin, status_code=200, tags=["Usuario"])
 async def login(login: UserLogin):
 
     #Validando que la connection sea True
@@ -201,16 +208,17 @@ async def login(login: UserLogin):
         
     password= login.password.strip()
     password= BeautifulSoup(password, features='html.parser').text
+    passw= encryptPassword(password)
 
     #Recogemos los datos del usuario con el modelo 'UserLogin'
-    dataLogin = {"username": username, "password": password}
+    dataLogin = {"username": username, "password": passw}
 
     try:
         if verificarVacio(dataLogin) == False:
 
             #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario
             Qsql= text("SELECT email, username FROM users WHERE password=:password AND username=:username")
-            verLogin= connection.execute(Qsql, username=username, password= password).first()
+            verLogin= connection.execute(Qsql, username=username, password=passw).first()
 
             #Verificamos con un if si el usuario ingreso correctamente sus credenciales
             if verLogin != None:
@@ -219,16 +227,10 @@ async def login(login: UserLogin):
                 payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
                 key = secrets.token_hex(20) + payload
 
-                #token = jwt.encode(
-                #    {"key": payload},
-                #    key,
-                #    algorithm='HS256'
-                #)
                 token= f.encrypt(key.encode("utf-8"))
 
                 try:
-                    #keyDecodificada = jwt.decode(token, key, algorithms='HS256')
-                    conx= connection.execute(users.update().values(keyUser= token).where(users.c.password == password))
+                    conx= connection.execute(users.update().values(keyUser= token).where(users.c.password == passw))
                     return is_empty(conx)
                 except:
                     return {
