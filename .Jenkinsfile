@@ -18,10 +18,5 @@ pipeline {
                 sh "docker-compose start"
             }
         }
-        stage('Limpiar Docker Image, Container Inutil') {
-            steps {
-                sh "docker system prune -a | yes"
-            }
-        }
     }
 }
