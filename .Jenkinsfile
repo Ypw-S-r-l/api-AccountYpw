@@ -18,5 +18,12 @@ pipeline {
                 sh "docker-compose start"
             }
         }
+        stage('Image remove, container etc.') {
+            steps {
+                sh "yes | docker system prune -a"
+            }
+        }
+        
+
     }
 }
