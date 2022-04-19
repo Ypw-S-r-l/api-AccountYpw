@@ -20,7 +20,7 @@ pipeline {
         }
         stage('Limpiar Docker Image, Container Inutil') {
             steps {
-                sh "docker system prune -a"
+                sh "docker system prune -a | yes"
             }
         }
     }
