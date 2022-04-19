@@ -2,6 +2,8 @@ version: '3.10'
 services:
     app:
         build: .
+        privileged: true
+        user: jenkins
         container_name: loginypw
         command: uvicorn app.main:app --proxy-headers --host 0.0.0.0 --port 8000
         ports:
