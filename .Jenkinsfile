@@ -4,6 +4,7 @@ pipeline {
     stages {
         stage('Docker-Compose build') {
             steps {
+               echo "No root"
                sh "docker-compose build"
                echo "Exito Build docker"
             }
