@@ -86,25 +86,19 @@ async def obtenerUsuario(user: UserObtener):
     appConnect= user.appConnect.strip()
     appConnect= BeautifulSoup(appConnect, features='html.parser').text
 
-    keyUser= user.key.strip()
+    keyUser= user.keyUser.strip()
     keyUser= BeautifulSoup(keyUser, features='html.parser').text
 
-    userArray= {"appConnect": appConnect, "key": keyUser}
+    userArray= {"appConnect": appConnect, "keyUser": keyUser}
 
     if verificarVacio(userArray) == False:
-        #Empezamos a procesar los datos
-        try:
-            #Qsql= text("SELECT userID FROM keys WHERE appConnect=:appConnect AND key=:key")
-            #response= connection.execute(Qsql, appConnect=appConnect, key=key).first()
-            response= connection.execute(keys.select().where(keys.c.key == keyUser, keys.c.appConnect == appConnect)).first()
         
-            return is_empty(response)
-        except:
-            return {
-                "error": True,
-                "message":"No se pudo ejecutar la peticion.",
-                "res": None
-            }
+        #Qsql= text("SELECT userID FROM keys WHERE appConnect=:appConnect OR key=:keyUser")
+        #verRegistro= connection.execute(Qsql, appConnect=appConnect, key=keyUser).first()
+
+        response= connection.execute(keys.select().where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+
+        return is_empty(response)
     else:
         return {
             "error": True,
@@ -238,13 +232,13 @@ async def login(login: UserLogin):
 
             try:
                 #keyApp= f.encrypt(payload.encode("utf-8"))
-                dataLogin["key"]= token
+                dataLogin["keyUser"]= token
 
                 #Obtener el userID del usuario para validarlo con userID de la base de datos.
                 #Qsql= text("SELECT key FROM keys INNER JOIN users ON users.userID == keys=:userIDK")
                 #verKey= connection.execute(Qsql, userIDK=userIDK).first()
 
-                conx= connection.execute(keys.insert().values(key= token, appConnect= appConnect, userID=userIDK))
+                conx= connection.execute(keys.insert().values(keyUser= token, appConnect= appConnect, userID=userIDK))
 
                 return is_empty(conx)
             except:

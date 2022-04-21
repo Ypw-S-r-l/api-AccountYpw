@@ -65,7 +65,7 @@ class UserLogin(BaseModel):
 #**** OBTENER USUARIO **** modelo
 class UserObtener(BaseModel):
     appConnect: str
-    key: str
+    keyUser: str
 
 
 #**** MODELOS DE ERRORES HTTPEXCEPTION **** modelo

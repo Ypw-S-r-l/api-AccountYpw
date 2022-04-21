@@ -41,7 +41,7 @@ users = Table(
 keys = Table(
     'keys', meta,
     Column('userID', Integer, nullable=False),
-    Column('key', TEXT, nullable=False),
+    Column('keyUser', TEXT, nullable=False),
     Column('appConnect', String(255), nullable=False),
     Column('keyID', Integer, nullable=False)
 )
