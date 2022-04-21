@@ -1,9 +1,9 @@
 import jwt, re, secrets, base64
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
-from sqlalchemy import text
+from sqlalchemy import false, text
 from Database.conexion import conn as connection
-from Models.index import users
+from Models.index import users, keys
 from Schemas.schemas import UserLogin, UserObtener, UserRegistro
 from datetime import datetime
 from cryptography.fernet import Fernet
@@ -74,7 +74,7 @@ async def obtenerUsuario(user: UserObtener):
             return {
                 "error": False,
                 "message": "Usuario existente",
-                "res": response
+                "res": None
             }   
         else:
             return {
@@ -83,23 +83,39 @@ async def obtenerUsuario(user: UserObtener):
                 "res": None
             }
     
-    keyUser= user.keyUser
-    keyUser= BeautifulSoup(keyUser, features='html.parser').text
+    appConnect= user.appConnect.strip()
+    appConnect= BeautifulSoup(appConnect, features='html.parser').text
 
-    try:
-        response = connection.execute(users.select().where(users.c.keyUser == keyUser)).first()
-        return is_empty(response)
-    except:
+    key= user.key.strip()
+    key= BeautifulSoup(key, features='html.parser').text
+
+    userArray= {"appConnect": appConnect, "key": key}
+    print(userArray)
+
+    if verificarVacio(userArray) == False:
+        #Empezamos a procesar los datos
+        try:
+            #Qsql= text("SELECT userID FROM keys WHERE appConnect=:appConnect AND key=:key")
+            #response= connection.execute(Qsql, appConnect=appConnect, key=key).first()
+            response= connection.execute(keys.select().where(keys.c.key == key, keys.c.appConnect == appConnect)).first()
+        
+            return is_empty(response)
+        except:
+            return {
+                "error": True,
+                "message":"No se pudo ejecutar la peticion.",
+                "res": None
+            }
+    else:
         return {
             "error": True,
-            "message": "Internal error server: ha ocurrido un problema con la peticion",
+            "message":"Existen campos vacios.",
             "res": None
         }
 
 #********* ruta: REGISTRAR USUARIO *********
 @user.post('/api/v1/register', status_code=200, tags=['Usuario'])
 async def registrar(user: UserRegistro):
-
 
     #Validando email: expresiones regulares
     def es_correo_valido(correo):
@@ -122,8 +138,6 @@ async def registrar(user: UserRegistro):
 
     #Creamos un diccionario con los valores del usuario,
     newUser = {"username": username, "name": name, "email": correo, "password": passw}
-    
-    #cursor= connection.connection.cursor()
 
     if verificarVacio(newUser) == False:
         #Empezamos a procesar los datos
@@ -140,13 +154,9 @@ async def registrar(user: UserRegistro):
                 payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
                 secreto= secrets.token_hex(10) + payload
                 token= f.encrypt(secreto.encode("utf-8"))
-                    
-                #token = jwt.encode(
-                #    {"pKey": payload},
-                #    secreto,
-                #    algorithm='HS256'
-                #)
-                newUser["keyUser"]= token #Pasamos el token generado al campo keyUser
+
+                #Pasamos el token generado al campo keyUser
+                newUser["keyUser"]= token 
 
                 #Conexion a ApiLogin/users(tabla)/insertar valores de NEWUSER
                 peticion= connection.execute(users.insert().values(newUser))
@@ -195,6 +205,7 @@ async def login(login: UserLogin):
                 "message": "Usuario no encontrado",
                 "res": None
             }
+    
 
     username= login.username.strip()
     username= BeautifulSoup(username, features='html.parser').text
@@ -203,50 +214,57 @@ async def login(login: UserLogin):
     password= BeautifulSoup(password, features='html.parser').text
     passw= base64.b64encode(password.encode("utf-8"))
 
+    appConnect= login.appConnect.strip()
+    appConnect= BeautifulSoup(appConnect, features='html.parser').text
+
     #Recogemos los datos del usuario con el modelo 'UserLogin'
-    dataLogin = {"username": username, "password": passw}
+    dataLogin = {"username": username, "password": passw, "appConnect": appConnect}
 
-    try:
-        if verificarVacio(dataLogin) == False:
 
-            #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario
-            Qsql= text("SELECT email, username FROM users WHERE password=:password AND username=:username")
-            verLogin= connection.execute(Qsql, username=username, password=passw).first()
+    if verificarVacio(dataLogin) == False:
 
-            #Verificamos con un if si el usuario ingreso correctamente sus credenciales
-            if verLogin != None:
+        #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario
+        Qsql= text("SELECT userID FROM users WHERE password=:password AND username=:username")
+        verLogin= connection.execute(Qsql, username=username, password=passw).first()
 
-                #Generador de token/keyUser
-                payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
-                key = secrets.token_hex(20) + payload
+        #Verificamos con un if si el usuario ingresó correctamente sus credenciales
+        if verLogin != None:
 
-                token= f.encrypt(key.encode("utf-8"))
+            userIDK= verLogin[0]
+            print(userIDK)
 
-                try:
-                    conx= connection.execute(users.update().values(keyUser= token).where(users.c.password == passw))
-                    return is_empty(conx)
-                except:
-                    return {
-                        "error": True,
-                        "message":"No se pudo ejecutar la peticion.",
-                        "res": None
-                    }
-            else:
+            #Generador de token/keyUser
+            payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
+            key = secrets.token_hex(20) + payload
+            token= f.encrypt(key.encode("utf-8"))
+
+            try:
+                #keyApp= f.encrypt(payload.encode("utf-8"))
+                dataLogin["key"]= token
+
+                #Obtener el userID del usuario para validarlo con userID de la base de datos.
+                #Qsql= text("SELECT key FROM keys INNER JOIN users ON users.userID == keys=:userIDK")
+                #verKey= connection.execute(Qsql, userIDK=userIDK).first()
+
+                conx= connection.execute(keys.insert().values(key= token, appConnect= appConnect, userID=userIDK))
+
+                return is_empty(conx)
+            except:
                 return {
                     "error": True,
-                    "message": "Username y/o Password inválido/s",
+                    "message":"No se pudo ejecutar la peticion.",
                     "res": None
                 }
         else:
             return {
                 "error": True,
-                "message": "Existen campos vacios.",
+                "message": "Username y/o Password inválido/s",
                 "res": None
             }
-    except:
+    else:
         return {
             "error": True,
-            "message": "Ocurrio un problema en la peticion.",
+            "message": "Existen campos vacios.",
             "res": None
         }
 

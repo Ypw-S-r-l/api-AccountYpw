@@ -42,6 +42,7 @@ class UserRequestModel(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+
 class UserResponseModel(UserRequestModel):
     userID: int
 
@@ -56,14 +57,15 @@ class UserRegistro(BaseModel):
 
 #***** LOGIN ****** modelo
 class UserLogin(BaseModel):
+    appConnect: str
     username: str
     password: str
 
 
 #**** OBTENER USUARIO **** modelo
 class UserObtener(BaseModel):
-    keyUser: str
-
+    appConnect: str
+    key: str
 
 
 #**** MODELOS DE ERRORES HTTPEXCEPTION **** modelo

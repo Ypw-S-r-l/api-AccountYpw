@@ -2,7 +2,7 @@ from sqlalchemy import DATETIME, JSON, TEXT, VARCHAR, Table, Column
 from sqlalchemy.sql.sqltypes import Integer, String, TIMESTAMP, DateTime
 from Database.conexion import meta, engine
 
-#------- Creacion de la tabla 'users'
+#------- Creacion de la tabla 'users' y 'keys'
 users = Table(
     "users", meta,
     Column('userID', Integer, primary_key=True, unique=True, autoincrement=True),
@@ -35,6 +35,15 @@ users = Table(
     Column('puertoDB', String(255), nullable=True),
     Column('pagWeb', String(255), nullable=True),
     Column('keyUser', String(255), unique=True)
+)
+
+
+keys = Table(
+    'keys', meta,
+    Column('userID', Integer, nullable=False),
+    Column('key', TEXT, nullable=False),
+    Column('appConnect', String(255), nullable=False),
+    Column('keyID', Integer, nullable=False)
 )
 
 meta.create_all(engine)     #Creando todo, las tablas, funciones, etc
