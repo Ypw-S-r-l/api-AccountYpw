@@ -90,7 +90,6 @@ async def obtenerUsuario(user: UserObtener):
     key= BeautifulSoup(key, features='html.parser').text
 
     userArray= {"appConnect": appConnect, "key": key}
-    print(userArray)
 
     if verificarVacio(userArray) == False:
         #Empezamos a procesar los datos
@@ -230,8 +229,8 @@ async def login(login: UserLogin):
         #Verificamos con un if si el usuario ingresó correctamente sus credenciales
         if verLogin != None:
 
+            #Almacenamos el userID del usuario en 'userIDK'
             userIDK= verLogin[0]
-            print(userIDK)
 
             #Generador de token/keyUser
             payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
