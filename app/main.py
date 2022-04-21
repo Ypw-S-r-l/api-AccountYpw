@@ -5,7 +5,10 @@ from Routes.user import user
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
-#from Schemas.schemas import UserRequestModel
+from fastapi import Request, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 description = """
 LoginYPW API helps you do awesome stuff. 🚀
@@ -30,6 +33,7 @@ app = FastAPI(debug=True,
     })
 
 
+#Funcion para responder cuando el usuario ingrese una ruta invalida
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     return JSONResponse({
@@ -37,6 +41,14 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         "message": "Ruta invalida.",
         "res": None,
         }
+    )
+
+#Funcion para responder cuando faltan campos
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=jsonable_encoder({"error": True, "message": "Inexistencia de campos.", "res": None}),
     )
 
 #Solucion CORS

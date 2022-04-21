@@ -1,3 +1,4 @@
+from http.client import HTTPException
 import jwt, re, secrets, base64
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
@@ -33,7 +34,6 @@ def verificarVacio(x):
 #Para generar keyUser
 key= Fernet.generate_key()
 f= Fernet(key)
-
 
 #--------- ruta: OBTENER DATOS ---------
 """
@@ -74,7 +74,7 @@ async def obtenerUsuario(user: UserObtener):
             return {
                 "error": False,
                 "message": "Usuario existente",
-                "res": None
+                "res": response
             }   
         else:
             return {
@@ -86,17 +86,17 @@ async def obtenerUsuario(user: UserObtener):
     appConnect= user.appConnect.strip()
     appConnect= BeautifulSoup(appConnect, features='html.parser').text
 
-    key= user.key.strip()
-    key= BeautifulSoup(key, features='html.parser').text
+    keyUser= user.key.strip()
+    keyUser= BeautifulSoup(keyUser, features='html.parser').text
 
-    userArray= {"appConnect": appConnect, "key": key}
+    userArray= {"appConnect": appConnect, "key": keyUser}
 
     if verificarVacio(userArray) == False:
         #Empezamos a procesar los datos
         try:
             #Qsql= text("SELECT userID FROM keys WHERE appConnect=:appConnect AND key=:key")
             #response= connection.execute(Qsql, appConnect=appConnect, key=key).first()
-            response= connection.execute(keys.select().where(keys.c.key == key, keys.c.appConnect == appConnect)).first()
+            response= connection.execute(keys.select().where(keys.c.key == keyUser, keys.c.appConnect == appConnect)).first()
         
             return is_empty(response)
         except:
@@ -120,7 +120,7 @@ async def registrar(user: UserRegistro):
     def es_correo_valido(correo):
         expresion_regular = r"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"
         return re.match(expresion_regular, correo) is not None
-    
+        
     #Obtenemos el correo introducido por el usuario y lo pasa por validador de Email
     username= user.username.strip()
     username= BeautifulSoup(username, features='html.parser').text
@@ -146,7 +146,7 @@ async def registrar(user: UserRegistro):
             Qsql= text("SELECT email, username FROM users WHERE email=:email OR username=:username")
             verRegistro= connection.execute(Qsql, email=correo.strip(), username=username.strip()).first()
 
-                
+                    
             if verRegistro == None:
 
                 #Generador de token/keyUser
@@ -182,7 +182,6 @@ async def registrar(user: UserRegistro):
             "message": "Existen campos vacios.",
             "res": None
         }
-
 
 #********* ruta: LOGIN *********
 @user.post("/api/v1/login", status_code=200, tags=["Usuario"])
