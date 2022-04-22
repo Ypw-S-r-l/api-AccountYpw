@@ -141,7 +141,7 @@ async def registrar(user: UserRegistro):
         if es_correo_valido(correo) == True:
             
             #Verificamos si el email ya ha sido registrado
-            Qsql= text("SELECT email, username FROM users WHERE email=:email OR username=:username")
+            Qsql= text("SELECT * FROM users WHERE email=:email AND username=:username")
             verRegistro= connection.execute(Qsql, email=correo.strip(), username=username.strip()).first()
 
                     
