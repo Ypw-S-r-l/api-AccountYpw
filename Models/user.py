@@ -33,15 +33,14 @@ users = Table(
     Column('servidorDB', String(255), nullable=True),
     Column('userDB', String(25), nullable=True),
     Column('puertoDB', String(255), nullable=True),
-    Column('pagWeb', String(255), nullable=True),
-    Column('keyUser', String(255), unique=True)
+    Column('pagWeb', String(255), nullable=True)
 )
 
 
 keys = Table(
     'keys', meta,
     Column('userID', Integer, nullable=False),
-    Column('keyUser', TEXT, nullable=False),
+    Column('keyUser', String, nullable=False),
     Column('appConnect', String(255), nullable=False),
     Column('keyID', Integer, nullable=False)
 )

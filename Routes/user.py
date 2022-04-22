@@ -1,8 +1,7 @@
-from http.client import HTTPException
 import jwt, re, secrets, base64
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
-from sqlalchemy import false, text
+from sqlalchemy import text
 from Database.conexion import conn as connection
 from Models.index import users, keys
 from Schemas.schemas import UserLogin, UserObtener, UserRegistro
@@ -68,20 +67,6 @@ async def obtenerDatos():
 #--------- ruta: OBTENER USUARIO --------
 @user.post('/api/v1/getUser', status_code=200, tags=['Usuario'])
 async def obtenerUsuario(user: UserObtener):
-
-    def is_empty(data_structure):
-        if data_structure:
-            return {
-                "error": False,
-                "message": "Usuario existente",
-                "res": response
-            }   
-        else:
-            return {
-                "error": False,
-                "message": "Usuario no existente",
-                "res": None
-            }
     
     appConnect= user.appConnect.strip()
     appConnect= BeautifulSoup(appConnect, features='html.parser').text
@@ -89,16 +74,35 @@ async def obtenerUsuario(user: UserObtener):
     keyUser= user.keyUser.strip()
     keyUser= BeautifulSoup(keyUser, features='html.parser').text
 
+    #Creamos un diccionario con los valores del usuario
     userArray= {"appConnect": appConnect, "keyUser": keyUser}
 
+    #Verificamos si algun campo esta vacio
     if verificarVacio(userArray) == False:
         
-        #Qsql= text("SELECT userID FROM keys WHERE appConnect=:appConnect OR key=:keyUser")
-        #verRegistro= connection.execute(Qsql, appConnect=appConnect, key=keyUser).first()
+        #Consultamos a la base de datos para obtener el userID del usuario
+        verDatos= connection.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
 
-        response= connection.execute(keys.select().where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+        #Verificamos si ha capturado datos.
+        if verDatos != None:
 
-        return is_empty(response)
+            #Almacenamos en userID el userID del usuario
+            userID= verDatos[0]
+
+            #Comprobamos si el userID de las tablas hacen match para obtener todos los datos del usuario
+            response= connection.execute(users.select().where(users.c.userID == userID)).first()
+        
+            return {
+                "error": False,
+                "message": "Usuario existente",
+                "res": response
+            }
+        else:
+            return {
+               "error": False,
+                "message": "Usuario no existente",
+                "res": None
+            }
     else:
         return {
             "error": True,
@@ -129,7 +133,7 @@ async def registrar(user: UserRegistro):
     correo= user.email.strip()
     correo= BeautifulSoup(correo, features='html.parser').text
 
-    #Creamos un diccionario con los valores del usuario,
+    #Creamos un diccionario con los valores del usuario
     newUser = {"username": username, "name": name, "email": correo, "password": passw}
 
     if verificarVacio(newUser) == False:
@@ -142,14 +146,6 @@ async def registrar(user: UserRegistro):
 
                     
             if verRegistro == None:
-
-                #Generador de token/keyUser
-                payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
-                secreto= secrets.token_hex(10) + payload
-                token= f.encrypt(secreto.encode("utf-8"))
-
-                #Pasamos el token generado al campo keyUser
-                newUser["keyUser"]= token 
 
                 #Conexion a ApiLogin/users(tabla)/insertar valores de NEWUSER
                 peticion= connection.execute(users.insert().values(newUser))
@@ -233,10 +229,6 @@ async def login(login: UserLogin):
             try:
                 #keyApp= f.encrypt(payload.encode("utf-8"))
                 dataLogin["keyUser"]= token
-
-                #Obtener el userID del usuario para validarlo con userID de la base de datos.
-                #Qsql= text("SELECT key FROM keys INNER JOIN users ON users.userID == keys=:userIDK")
-                #verKey= connection.execute(Qsql, userIDK=userIDK).first()
 
                 conx= connection.execute(keys.insert().values(keyUser= token, appConnect= appConnect, userID=userIDK))
 
