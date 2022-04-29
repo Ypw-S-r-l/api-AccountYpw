@@ -1,20 +1,31 @@
-import jwt, re, secrets, base64
+from atexit import register
+import re, secrets, base64
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
 from sqlalchemy import text
 from Database.conexion import conn as connection
 from Models.index import users, keys
-from Schemas.schemas import UserLogin, UserObtener, UserRegistro
+from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserLogout, UserSeccion
 from datetime import datetime
 from cryptography.fernet import Fernet
+from Database.conexion import cursor
 
 user = APIRouter()
 
 
-@user.on_event("startup")
+#-------- Eventos para validar conexion a DB () --------
+"""
+@app.on_event("startup")
 async def startup():
-    connection.connect()
+    if connection.is_closed():
+        connection.connect()
 
+@app.on_event("shutdown")
+async def shutdown():
+    if not connection.is_closed():
+        connection.close()
+        print("Conexión inválida.")
+"""
 
 #--------- ruta: root ---------
 @user.get('/', tags=["Welcome"])
@@ -130,25 +141,25 @@ async def registrar(user: UserRegistro):
     password= BeautifulSoup(password, features='html.parser').text
     passw= base64.b64encode(password.encode("utf-8"))
 
-    correo= user.email.strip()
-    correo= BeautifulSoup(correo, features='html.parser').text
+    email= user.email.strip()
+    email= BeautifulSoup(email, features='html.parser').text
 
     #Creamos un diccionario con los valores del usuario
-    newUser = {"username": username, "name": name, "email": correo, "password": passw}
+    newUser = {"username": username, "name": name, "email": email, "password": passw}
 
     if verificarVacio(newUser) == False:
         #Empezamos a procesar los datos
-        if es_correo_valido(correo) == True:
+        if es_correo_valido(email) == True:
+        
+            ##**** Verificamos si el email ya ha sido registrado
+            arg= (username, passw, email, name, 0)
+            cursor.callproc('registerUser', args=arg)
+            connection.connection.commit()
+            output= cursor.fetchone()
+            output= output[0]
             
-            #Verificamos si el email ya ha sido registrado
-            Qsql= text("SELECT * FROM users WHERE email=:email AND username=:username")
-            verRegistro= connection.execute(Qsql, email=correo.strip(), username=username.strip()).first()
+            if output == 1:
 
-                    
-            if verRegistro == None:
-
-                #Conexion a ApiLogin/users(tabla)/insertar valores de NEWUSER
-                peticion= connection.execute(users.insert().values(newUser))
                 return {
                     "error": False,
                     "message": "Usuario agregado correctamente.",
@@ -172,6 +183,7 @@ async def registrar(user: UserRegistro):
             "message": "Existen campos vacios.",
             "res": None
         }
+
 
 #********* ruta: LOGIN *********
 @user.post("/api/v1/login", status_code=200, tags=["Usuario"])
@@ -251,6 +263,119 @@ async def login(login: UserLogin):
             "message": "Existen campos vacios.",
             "res": None
         }
+
+
+#********* ruta: CERRAR SECCION *********
+@user.post('/api/v1/logout', status_code=200, tags=['Usuario'])
+async def logout(user: UserLogout):
+    
+    appConnect= user.appConnect.strip()
+    appConnect= BeautifulSoup(appConnect, features='html.parser').text
+
+    keyUser= user.keyUser.strip()
+    keyUser= BeautifulSoup(keyUser, features='html.parser').text
+
+    #Creamos un diccionario con los valores del usuario
+    userArray= {"appConnect": appConnect, "keyUser": keyUser}
+
+    #Verificamos si algun campo esta vacio
+    if verificarVacio(userArray) == False:
+        
+        #Consultamos a la base de datos para obtener el userID del usuario
+        verSeccion= connection.execute(keys.select().where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+
+        #Verificamos si ha capturado datos.
+        if verSeccion != None:
+
+            eliminarSeccion= connection.execute(keys.delete().where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect))
+        
+            return {
+                "error": False,
+                "message": "Seccion cerrada correctamente.",
+                "res": None
+            }
+        else:
+            return {
+               "error": True,
+                "message": "La seccion no existe.",
+                "res": None
+            }
+    else:
+        return {
+            "error": True,
+            "message":"Existen campos vacios.",
+            "res": None
+        }
+
+
+#********* ruta: OBTENER TODAS LAS APPS DEL USUARIO *********
+@user.post('/api/v1/getSections', status_code=200, tags=['Usuario'])
+async def getSections(user: UserSeccion):
+
+    #Validando que la connection sea True
+    def is_empty(con):
+        if con:
+            return {
+                "error": False,
+                "message": "Apps conectadas a ypwLogin",
+                "res": conx
+            }
+        else:
+            return {
+                "error": False,
+                "message": "No existen apps conectadas a este usuario.",
+                "res": None
+            }
+    
+    username= user.username.strip()
+    username= BeautifulSoup(username, features='html.parser').text
+
+    passw= user.password.strip()
+    passw= BeautifulSoup(passw, features='html.parser').text
+    passw= base64.b64encode(passw.encode("utf-8"))
+
+    #Creamos un diccionario con los valores del usuario
+    userArray= {"username": username, "password": passw}
+
+    if verificarVacio(userArray) == False:
+
+        #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario.
+        Qsql= text("SELECT userID FROM users WHERE password=:password AND username=:username")
+        login= connection.execute(Qsql, password=passw, username=username).first()
+        #login= connection.execute(users.select(users.c.userID).where(users.c.username == username, users.c.password == passw)).first()
+        print(login)
+
+        #Verificamos con un if si el usuario ingresó correctamente sus credenciales.
+        if login != None:
+
+            #Almacenamos el userID del usuario en 'userIDU'
+            userIDU= login[0]
+            print(userIDU)
+
+            try:
+                conx= connection.execute(keys.select().where(keys.c.userID == userIDU)).fetchall()
+
+                return is_empty(conx)
+            except:
+                return {
+                    "error": True,
+                    "message":"No se pudo ejecutar la peticion.",
+                    "res": None
+                }
+        else:
+            return {
+                "error": True,
+                "message": "Username y/o Password inválido/s",
+                "res": None
+            }
+    else:
+        return {
+            "error": True,
+            "message": "Existen campos vacios.",
+            "res": None
+        }
+
+
 
 """
 #********* ruta: ACTUALIZAR *********

@@ -68,4 +68,16 @@ class UserObtener(BaseModel):
     keyUser: str
 
 
+#***** LOGOUT: cerrar seccion ****** modelo
+class UserLogout(BaseModel):
+    appConnect: str
+    keyUser: str
+
+
+#***** OBTENER SECCIONES ****** modelo
+class UserSeccion(BaseModel):
+    username: str
+    password: str
+
+
 #**** MODELOS DE ERRORES HTTPEXCEPTION **** modelo
