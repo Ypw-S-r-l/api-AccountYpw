@@ -342,15 +342,12 @@ async def getSections(user: UserSeccion):
         #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario.
         Qsql= text("SELECT userID FROM users WHERE password=:password AND username=:username")
         login= connection.execute(Qsql, password=passw, username=username).first()
-        #login= connection.execute(users.select(users.c.userID).where(users.c.username == username, users.c.password == passw)).first()
-        print(login)
 
         #Verificamos con un if si el usuario ingresó correctamente sus credenciales.
         if login != None:
 
             #Almacenamos el userID del usuario en 'userIDU'
             userIDU= login[0]
-            print(userIDU)
 
             try:
                 conx= connection.execute(keys.select().where(keys.c.userID == userIDU)).fetchall()
