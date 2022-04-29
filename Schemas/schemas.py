@@ -76,8 +76,8 @@ class UserLogout(BaseModel):
 
 #***** OBTENER SECCIONES ****** modelo
 class UserSeccion(BaseModel):
-    username: str
-    password: str
+    appConnect: str
+    keyUser: str
 
 
 #**** MODELOS DE ERRORES HTTPEXCEPTION **** modelo

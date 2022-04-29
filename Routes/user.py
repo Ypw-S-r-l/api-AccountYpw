@@ -327,29 +327,27 @@ async def getSections(user: UserSeccion):
                 "res": None
             }
     
-    username= user.username.strip()
-    username= BeautifulSoup(username, features='html.parser').text
+    appConnect= user.appConnect.strip()
+    appConnect= BeautifulSoup(appConnect, features='html.parser').text
 
-    passw= user.password.strip()
-    passw= BeautifulSoup(passw, features='html.parser').text
-    passw= base64.b64encode(passw.encode("utf-8"))
+    keyUser= user.keyUser.strip()
+    keyUser= BeautifulSoup(keyUser, features='html.parser').text
 
     #Creamos un diccionario con los valores del usuario
-    userArray= {"username": username, "password": passw}
+    userArray= {"appConnect": appConnect, "keyUser": keyUser}
 
     if verificarVacio(userArray) == False:
 
         #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario.
-        Qsql= text("SELECT userID FROM users WHERE password=:password AND username=:username")
-        login= connection.execute(Qsql, password=passw, username=username).first()
-
+        login= connection.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+        
         #Verificamos con un if si el usuario ingresó correctamente sus credenciales.
         if login != None:
-
-            #Almacenamos el userID del usuario en 'userIDU'
-            userIDU= login[0]
-
+            
             try:
+                #Almacenamos el userID del usuario en 'userIDU'
+                userIDU= login[0]
+
                 conx= connection.execute(keys.select().where(keys.c.userID == userIDU)).fetchall()
 
                 return is_empty(conx)
