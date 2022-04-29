@@ -360,7 +360,7 @@ async def getSections(user: UserSeccion):
         else:
             return {
                 "error": True,
-                "message": "Username y/o Password inválido/s",
+                "message": "keyUser y/o appConnect inválido/s",
                 "res": None
             }
     else:
