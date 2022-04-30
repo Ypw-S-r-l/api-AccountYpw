@@ -1,8 +1,7 @@
-from atexit import register
 import re, secrets, base64
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
-from sqlalchemy import text
+from sqlalchemy import false, text
 from Database.conexion import conn as connection
 from Models.index import users, keys
 from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserLogout, UserSeccion
@@ -14,23 +13,23 @@ user = APIRouter()
 
 
 #-------- Eventos para validar conexion a DB () --------
-"""
-@app.on_event("startup")
+@user.on_event("startup")
 async def startup():
-    if connection.is_closed():
-        connection.connect()
+    print("Application startup")
 
-@app.on_event("shutdown")
+@user.on_event("shutdown")
 async def shutdown():
-    if not connection.is_closed():
-        connection.close()
-        print("Conexión inválida.")
-"""
+    print("Application shutdown")
+
 
 #--------- ruta: root ---------
 @user.get('/', tags=["Welcome"])
 async def root():
-    return {"message": "Bienvenidos a APILogin YPW"}
+    return {
+        "error": False,
+        "message": "Bienvenid@ a APILogin YPW",
+        "res": None
+    }
 
 
 #Y comprobamos si los inputs estan vacios
@@ -224,7 +223,7 @@ async def login(login: UserLogin):
     if verificarVacio(dataLogin) == False:
 
         #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario
-        Qsql= text("SELECT userID FROM users WHERE password=:password AND username=:username")
+        Qsql= text("select userID from users where password=:password and username=:username")
         verLogin= connection.execute(Qsql, username=username, password=passw).first()
 
         #Verificamos con un if si el usuario ingresó correctamente sus credenciales
