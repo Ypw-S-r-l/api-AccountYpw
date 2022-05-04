@@ -1,10 +1,11 @@
-import re, secrets, base64
+import re, secrets, bcrypt, base64, hashlib
+from unittest import result
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
-from sqlalchemy import false, text
+from sqlalchemy import text
 from Database.conexion import conn as connection
 from Models.index import users, keys
-from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserLogout, UserSeccion
+from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserLogout, UserSeccion, RecoveryPassw
 from datetime import datetime
 from cryptography.fernet import Fernet
 from Database.conexion import cursor
@@ -43,6 +44,26 @@ def verificarVacio(x):
 #Para generar keyUser
 key= Fernet.generate_key()
 f= Fernet(key)
+
+
+#FUNCION PARA ENCRIPTAR EL PASSWORD DE USUARIO
+def encrytPassw(passw):
+
+    with open('config\secretKey.txt') as file:
+        secretKey= file.read()
+        secretKey= bytes(secretKey, encoding='ascii')
+        file.close()
+
+    key = bcrypt.kdf(
+        password= passw,
+        salt= secretKey,
+        desired_key_bytes= 64,
+        rounds= 100
+    )
+
+    passwd= base64.b64encode(hashlib.sha256(key).digest())
+    return passwd
+
 
 #--------- ruta: OBTENER DATOS ---------
 """
@@ -138,7 +159,8 @@ async def registrar(user: UserRegistro):
 
     password= user.password.strip()
     password= BeautifulSoup(password, features='html.parser').text
-    passw= base64.b64encode(password.encode("utf-8"))
+    passw= password.encode()
+    passw= encrytPassw(passw)
 
     email= user.email.strip()
     email= BeautifulSoup(email, features='html.parser').text
@@ -150,7 +172,6 @@ async def registrar(user: UserRegistro):
         #Empezamos a procesar los datos
         if es_correo_valido(email) == True:
         
-            ##**** Verificamos si el email ya ha sido registrado
             arg= (username, passw, email, name, 0)
             cursor.callproc('registerUser', args=arg)
             connection.connection.commit()
@@ -205,13 +226,14 @@ async def login(login: UserLogin):
                 "res": None
             }
     
-
+    #username, telefono, email
     username= login.username.strip()
     username= BeautifulSoup(username, features='html.parser').text
         
     password= login.password.strip()
     password= BeautifulSoup(password, features='html.parser').text
-    passw= base64.b64encode(password.encode("utf-8"))
+    passw= password.encode()
+    passw= encrytPassw(passw)
 
     appConnect= login.appConnect.strip()
     appConnect= BeautifulSoup(appConnect, features='html.parser').text
@@ -369,6 +391,58 @@ async def getSections(user: UserSeccion):
             "res": None
         }
 
+
+#********* ruta: CAMBIAR CONTRASEÑA DEL USUARIO *********
+@user.post('/api/v1/changePassword', status_code=200, tags=['Usuario'])
+async def changePassword(user: RecoveryPassw):
+    
+    appConnect= user.appConnect.strip()
+    appConnect= BeautifulSoup(appConnect, features='html.parser').text
+
+    keyUser= user.keyUser.strip()
+    keyUser= BeautifulSoup(keyUser, features='html.parser').text
+    
+    newPassword= user.newPassword.strip()
+    newPassword= BeautifulSoup(newPassword, features='html.parser').text
+    newPassw= newPassword.encode()
+    newPassw= encrytPassw(newPassw)
+
+    #Creamos un diccionario con los valores del usuario
+    userArray= {"appConnect": appConnect, "keyUser": keyUser, "newPassword": newPassw}
+
+    #Verificamos si algun campo esta vacio
+    if verificarVacio(userArray) == False:
+        
+        #Consultamos a la base de datos para obtener el userID del usuario
+        vlogin= connection.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+
+        #Verificamos si ha capturado datos.
+        if vlogin != None:
+            
+            userIDU= vlogin[0]
+            
+            connection.execute(users.update().values(password= newPassw).where(users.c.userID == userIDU))
+        
+            return {
+                "error": False,
+                "message": "La contraseña ha sido actualizada exitosamente.",
+                "res": None
+            }
+        else:
+            return {
+               "error": True,
+                "message": "Username y/o Password inválido/s.",
+                "res": None
+            }
+    else:
+        return {
+            "error": True,
+            "message":"Existen campos vacios.",
+            "res": None
+        }
+    
+    
+    
 
 
 """

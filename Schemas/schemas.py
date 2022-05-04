@@ -1,4 +1,5 @@
 from datetime import datetime
+from lib2to3.pytree import Base
 from time import *
 from pydantic import BaseModel, Field
 from typing import *
@@ -78,6 +79,12 @@ class UserLogout(BaseModel):
 class UserSeccion(BaseModel):
     appConnect: str
     keyUser: str
+
+#***** OBTENER SECCIONES ****** modelo
+class RecoveryPassw(BaseModel):
+    appConnect: str
+    keyUser: str
+    newPassword: str
 
 
 #**** MODELOS DE ERRORES HTTPEXCEPTION **** modelo
