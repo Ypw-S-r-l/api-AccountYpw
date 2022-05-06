@@ -54,13 +54,14 @@ class UserRegistro(BaseModel):
     password: str
     name: str
     email: str
+    phone: str
 
 
 #***** LOGIN ****** modelo
 class UserLogin(BaseModel):
-    appConnect: str
-    username: str
+    uniCampo: str
     password: str
+    appConnect: str
 
 
 #**** OBTENER USUARIO **** modelo

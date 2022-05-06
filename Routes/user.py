@@ -1,3 +1,4 @@
+import email
 import re, secrets, bcrypt, base64, hashlib
 from unittest import result
 from fastapi import APIRouter
@@ -63,6 +64,19 @@ def encrytPassw(passw):
 
     passwd= base64.b64encode(hashlib.sha256(key).digest())
     return passwd
+
+
+
+#VALIDANDO EMAIL: expresiones regulares
+def es_correo_valido(correo):
+    expresion_regular = r"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"
+    return re.match(expresion_regular, correo) is not None
+
+#VALIDANDO PHONE: expresiones regulares
+def es_telefono_valido(phone):
+    expresion_regular = r"^((\+1) ?[0-9]{3} ?|[0-9]{3} ?)[0-9]{3}(-?) ?[0-9]{4}$"
+    return re.match(expresion_regular, phone) is not None
+
 
 
 #--------- ruta: OBTENER DATOS ---------
@@ -141,14 +155,10 @@ async def obtenerUsuario(user: UserObtener):
             "res": None
         }
 
+
 #********* ruta: REGISTRAR USUARIO *********
 @user.post('/api/v1/register', status_code=200, tags=['Usuario'])
 async def registrar(user: UserRegistro):
-
-    #Validando email: expresiones regulares
-    def es_correo_valido(correo):
-        expresion_regular = r"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"
-        return re.match(expresion_regular, correo) is not None
         
     #Obtenemos el correo introducido por el usuario y lo pasa por validador de Email
     username= user.username.strip()
@@ -164,15 +174,18 @@ async def registrar(user: UserRegistro):
 
     email= user.email.strip()
     email= BeautifulSoup(email, features='html.parser').text
+    
+    phone= user.phone.strip()
+    phone= BeautifulSoup(phone, features='html.parser').text
 
     #Creamos un diccionario con los valores del usuario
-    newUser = {"username": username, "name": name, "email": email, "password": passw}
+    newUser = {"username": username, "password": passw, "email": email, "name": name, "phone": phone}
 
     if verificarVacio(newUser) == False:
         #Empezamos a procesar los datos
         if es_correo_valido(email) == True:
         
-            arg= (username, passw, email, name, 0)
+            arg= (username, passw, email, name, phone, 0)
             cursor.callproc('registerUser', args=arg)
             connection.connection.commit()
             output= cursor.fetchone()
@@ -226,44 +239,64 @@ async def login(login: UserLogin):
                 "res": None
             }
     
-    #username, telefono, email
-    username= login.username.strip()
-    username= BeautifulSoup(username, features='html.parser').text
-        
+    #CAMPO: uceCampo: username, telefono, email
+    uniCampo= login.uniCampo.strip()
+    uniCampo= BeautifulSoup(uniCampo, features='html.parser').text
+    
     password= login.password.strip()
     password= BeautifulSoup(password, features='html.parser').text
     passw= password.encode()
     passw= encrytPassw(passw)
-
+    
     appConnect= login.appConnect.strip()
     appConnect= BeautifulSoup(appConnect, features='html.parser').text
 
     #Recogemos los datos del usuario con el modelo 'UserLogin'
-    dataLogin = {"username": username, "password": passw, "appConnect": appConnect}
+    dataLogin = {"uniCampo": uniCampo, "password": passw, "appConnect": appConnect}
+        
 
-
-    if verificarVacio(dataLogin) == False:
+    if verificarVacio(dataLogin) == False: 
 
         #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario
-        Qsql= text("select userID from users where password=:password and username=:username")
-        verLogin= connection.execute(Qsql, username=username, password=passw).first()
+        
+        if es_correo_valido(uniCampo) == True:
+            #Usando procedimiento almacenado: loginEmail
+            arg= (uniCampo, passw,)
+            cursor.callproc('loginEmail', args=arg)
+            connection.connection.commit()
+            output= cursor.fetchone()
+        
+        elif es_telefono_valido(uniCampo) == True:
+            #Usando procedimiento almacenado: loginPhone
+            arg= (uniCampo, passw,)
+            cursor.callproc('loginPhone', args=arg)
+            connection.connection.commit()
+            output= cursor.fetchone()
+            
+        else:
+            #Usando procedimiento almacenado: loginUser
+            arg= (uniCampo, passw,)
+            cursor.callproc('loginUser', args=arg)
+            connection.connection.commit()
+            output= cursor.fetchone()
+
 
         #Verificamos con un if si el usuario ingresó correctamente sus credenciales
-        if verLogin != None:
-
+        if output != None:
+            
             #Almacenamos el userID del usuario en 'userIDK'
-            userIDK= verLogin[0]
-
+            output= output[0]
+            print(output)
+        
             #Generador de token/keyUser
             payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
             key = secrets.token_hex(20) + payload
             token= f.encrypt(key.encode("utf-8"))
 
             try:
-                #keyApp= f.encrypt(payload.encode("utf-8"))
                 dataLogin["keyUser"]= token
 
-                conx= connection.execute(keys.insert().values(keyUser= token, appConnect= appConnect, userID=userIDK))
+                conx= connection.execute(keys.insert().values(keyUser= token, appConnect= appConnect, userID=output))
 
                 return is_empty(conx)
             except:
