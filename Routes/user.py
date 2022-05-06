@@ -1,12 +1,9 @@
-import email
 import re, secrets, bcrypt, base64, hashlib
-from unittest import result
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
-from sqlalchemy import text
 from Database.conexion import conn as connection
 from Models.index import users, keys
-from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserLogout, UserSeccion, RecoveryPassw, changePassw
+from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserLogout, UserSeccion, ChangePassw
 from datetime import datetime
 from cryptography.fernet import Fernet
 from Database.conexion import cursor
@@ -440,7 +437,7 @@ async def getSections(user: UserSeccion):
 
 #********* ruta: CAMBIAR CONTRASEÑA DEL USUARIO *********
 @user.post('/api/v1/changePassword', status_code=200, tags=['Usuario'])
-async def changePassword(user: changePassw):
+async def changePassword(user: ChangePassw):
             
     appConnect= user.appConnect.strip()
     appConnect= BeautifulSoup(appConnect, features='html.parser').text
@@ -452,6 +449,8 @@ async def changePassword(user: changePassw):
     newPassword= BeautifulSoup(newPassword, features='html.parser').text
     newPassw= newPassword.encode()
     newPassw= encrytPassw(newPassw)
+    
+    removeSections= user.removeSections
 
     #Creamos un diccionario con los valores del usuario
     userArray= {"appConnect": appConnect, "keyUser": keyUser, "newPassword": newPassw}
@@ -469,11 +468,23 @@ async def changePassword(user: changePassw):
             
             connection.execute(users.update().values(password= newPassw).where(users.c.userID == userIDU))
             
-            return {
-                "error": False,
-                "message": "La contraseña ha sido actualizada exitosamente.",
-                "res": None
-            }
+            if removeSections == True:
+                connection.execute(keys.delete().where(keys.c.userID == userIDU))
+                
+                return {
+                    "error": False,
+                    "message": {
+                        "m1:": "La contraseña ha sido actualizada exitosamente.",
+                        "m2:": "Todas las secciones se han eliminado."
+                    },
+                    "res": None
+                }
+            else:
+                return {
+                    "error": False,
+                    "message": "La contraseña ha sido actualizada exitosamente.",
+                    "res": None
+                }
         else:
             return {
                "error": True,
@@ -561,44 +572,6 @@ def actualizar(user: UserRequestModel, keyUser: str):
                 "error": True,
                 "message": "keyUser inválido: usuario no encontrado.",
                 "res": None
-            }
-    except:
-        return {
-            "error": True,
-            "message": "La peticion no pudo ser procesada.",
-            "res": None
-        }
-"""
-
-#********* ruta: ELIMINAR *********
-"""
-@user.delete("/api/v1/delete/{keyUser}", tags=["Usuario"])
-def eliminar(keyUser: str):
-
-    def is_empty(data_structure):
-        if data_structure:
-            return {
-                "error": False,
-                "message": "Usuario eliminado exitosamente",
-                "res": None
-            }
-        else:
-            return {
-                "error": False,
-                "message": "El usuario no se pudo eliminar",
-                "res": None
-            }
-
-    try:
-        sql = connection.execute(users.delete().where(users.c.keyUser == keyUser))
-
-        if sql:
-            return is_empty(sql)
-        else:
-            return {
-                "error": True,
-                "message": "keyUser inválido: usuario no encontrado.",
-                "res": None 
             }
     except:
         return {

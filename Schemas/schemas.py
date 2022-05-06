@@ -82,10 +82,10 @@ class UserSeccion(BaseModel):
     keyUser: str
 
 #***** OBTENER SECCIONES ****** modelo
-class changePassw(BaseModel):
+class ChangePassw(BaseModel):
     appConnect: str
     keyUser: str
     newPassword: str
-
+    removeSections: bool= False
 
 #**** MODELOS DE ERRORES HTTPEXCEPTION **** modelo
