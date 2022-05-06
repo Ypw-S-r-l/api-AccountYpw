@@ -19,7 +19,10 @@ You will be able to:
 
 * **Register users** (_implemented_).
 * **Login users** (_implemented_).
+* **Logout users** (_implemented_).
 * **Get users** (_implemented_).
+* **Get sections** (_implemented_).
+* **Change password** (_implemented_).
 """
 
 app = FastAPI(debug=True,
