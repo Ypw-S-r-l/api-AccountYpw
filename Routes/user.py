@@ -47,7 +47,7 @@ f= Fernet(key)
 #FUNCION PARA ENCRIPTAR EL PASSWORD DE USUARIO
 def encrytPassw(passw):
 
-    with open('/app/./config/secretKey.txt') as file:
+    with open('./config/secretKey.txt') as file:
         secretKey= file.read()
         secretKey= bytes(secretKey, encoding='ascii')
         file.close()
