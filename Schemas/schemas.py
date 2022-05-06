@@ -82,7 +82,7 @@ class UserSeccion(BaseModel):
     keyUser: str
 
 #***** OBTENER SECCIONES ****** modelo
-class RecoveryPassw(BaseModel):
+class changePassw(BaseModel):
     appConnect: str
     keyUser: str
     newPassword: str

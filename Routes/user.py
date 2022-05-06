@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from sqlalchemy import text
 from Database.conexion import conn as connection
 from Models.index import users, keys
-from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserLogout, UserSeccion, RecoveryPassw
+from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserLogout, UserSeccion, RecoveryPassw, changePassw
 from datetime import datetime
 from cryptography.fernet import Fernet
 from Database.conexion import cursor
@@ -182,32 +182,46 @@ async def registrar(user: UserRegistro):
     newUser = {"username": username, "password": passw, "email": email, "name": name, "phone": phone}
 
     if verificarVacio(newUser) == False:
-        #Empezamos a procesar los datos
+        #Empezamos a procesar el correo electronico
         if es_correo_valido(email) == True:
-        
-            arg= (username, passw, email, name, phone, 0)
-            cursor.callproc('registerUser', args=arg)
-            connection.connection.commit()
-            output= cursor.fetchone()
-            output= output[0]
-            
-            if output == 1:
-
-                return {
-                    "error": False,
-                    "message": "Usuario agregado correctamente.",
-                    "res": None
-                }
+            #Empezamos a procesar el numero de telefono
+            if es_telefono_valido(phone) == True:
+                
+                #Generador de token/keyUser.
+                payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
+                key = secrets.token_hex(20) + payload
+                token= f.encrypt(key.encode("utf-8"))
+                
+                #Usamos el procedimiento almacenado para registrar el usuario y el token generado.
+                arg= (username, passw, email, name, phone, token, 0)
+                cursor.callproc('registerUser', args=arg)
+                connection.connection.commit()
+                output= cursor.fetchone()
+                output= output[0]
+                
+                if output == 1:
+                    
+                    return {
+                        "error": False,
+                        "message": "Usuario agregado correctamente.",
+                        "res": None
+                    }
+                else:
+                    return {
+                        "error": True,
+                        "message": "El usuario que intenta registrar ya existe.",
+                        "res": None
+                    }
             else:
                 return {
                     "error": True,
-                    "message": "El usuario que intenta registrar ya existe.",
+                    "message": "Número de teléfono inválido.",
                     "res": None
                 }
         else:
             return {
                 "error": True,
-                "message": "Correo electronico invalido.",
+                "message": "Correo electrónico inválido.",
                 "res": None
             }
     else:
@@ -286,7 +300,6 @@ async def login(login: UserLogin):
             
             #Almacenamos el userID del usuario en 'userIDK'
             output= output[0]
-            print(output)
         
             #Generador de token/keyUser
             payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
@@ -427,8 +440,8 @@ async def getSections(user: UserSeccion):
 
 #********* ruta: CAMBIAR CONTRASEÑA DEL USUARIO *********
 @user.post('/api/v1/changePassword', status_code=200, tags=['Usuario'])
-async def changePassword(user: RecoveryPassw):
-    
+async def changePassword(user: changePassw):
+            
     appConnect= user.appConnect.strip()
     appConnect= BeautifulSoup(appConnect, features='html.parser').text
 
@@ -455,7 +468,7 @@ async def changePassword(user: RecoveryPassw):
             userIDU= vlogin[0]
             
             connection.execute(users.update().values(password= newPassw).where(users.c.userID == userIDU))
-        
+            
             return {
                 "error": False,
                 "message": "La contraseña ha sido actualizada exitosamente.",
@@ -473,10 +486,6 @@ async def changePassword(user: RecoveryPassw):
             "message":"Existen campos vacios.",
             "res": None
         }
-    
-    
-    
-
 
 """
 #********* ruta: ACTUALIZAR *********
