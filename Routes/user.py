@@ -294,7 +294,7 @@ async def login(login: UserLogin):
 
         #Verificamos con un if si el usuario ingresó correctamente sus credenciales
         if output != None:
-            
+
             #Almacenamos el userID del usuario en 'userIDK'
             output= output[0]
         
