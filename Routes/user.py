@@ -171,7 +171,7 @@ async def registrar(user: UserRegistro):
                     return {
                         "error": False,
                         "message": "Usuario agregado correctamente.",
-                        "res": None
+                        "res": token
                     }
                 else:
                     return {
