@@ -59,7 +59,7 @@ class UserRegistro(BaseModel):
 
 #***** LOGIN ****** modelo
 class UserLogin(BaseModel):
-    uniCampo: str
+    username: str
     password: str
     appConnect: str
 

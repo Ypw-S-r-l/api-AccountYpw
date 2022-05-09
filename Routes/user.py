@@ -251,8 +251,8 @@ async def login(login: UserLogin):
             }
     
     #CAMPO: uceCampo: username, telefono, email
-    uniCampo= login.uniCampo.strip()
-    uniCampo= BeautifulSoup(uniCampo, features='html.parser').text
+    username= login.username.strip()
+    username= BeautifulSoup(username, features='html.parser').text
     
     password= login.password.strip()
     password= BeautifulSoup(password, features='html.parser').text
@@ -263,30 +263,30 @@ async def login(login: UserLogin):
     appConnect= BeautifulSoup(appConnect, features='html.parser').text
 
     #Recogemos los datos del usuario con el modelo 'UserLogin'
-    dataLogin = {"uniCampo": uniCampo, "password": passw, "appConnect": appConnect}
+    dataLogin = {"username": username, "password": passw, "appConnect": appConnect}
         
 
     if verificarVacio(dataLogin) == False: 
 
         #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario
         
-        if es_correo_valido(uniCampo) == True:
+        if es_correo_valido(username) == True:
             #Usando procedimiento almacenado: loginEmail
-            arg= (uniCampo, passw,)
+            arg= (username, passw,)
             cursor.callproc('loginEmail', args=arg)
             connection.connection.commit()
             output= cursor.fetchone()
         
-        elif es_telefono_valido(uniCampo) == True:
+        elif es_telefono_valido(username) == True:
             #Usando procedimiento almacenado: loginPhone
-            arg= (uniCampo, passw,)
+            arg= (username, passw,)
             cursor.callproc('loginPhone', args=arg)
             connection.connection.commit()
             output= cursor.fetchone()
             
         else:
             #Usando procedimiento almacenado: loginUser
-            arg= (uniCampo, passw,)
+            arg= (username, passw,)
             cursor.callproc('loginUser', args=arg)
             connection.connection.commit()
             output= cursor.fetchone()
