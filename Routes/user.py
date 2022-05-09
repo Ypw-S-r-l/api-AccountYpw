@@ -71,40 +71,10 @@ def es_correo_valido(correo):
 
 #VALIDANDO PHONE: expresiones regulares
 def es_telefono_valido(phone):
-    expresion_regular = r"^((\+1) ?[0-9]{3} ?|[0-9]{3} ?)[0-9]{3}(-?) ?[0-9]{4}$"
+    expresion_regular = r"^[+]?(\d{1,4})?\s?-?[.]?[(]?\d{3}[)]?\s?-?[.]?\d{3}\s?-?[.]?\d{4}$"
     return re.match(expresion_regular, phone) is not None
 
 
-
-#--------- ruta: OBTENER DATOS ---------
-"""
-@user.get('/api/v1/getData', tags=["Usuario"])
-async def obtenerDatos():
-    
-    def is_empty(data_structure):
-        if data_structure:
-            return {
-                "error": False,
-                "message": "Datos existentes",
-                "res": data
-            }
-        else:
-            return {
-                "error": False,
-                "message": "No hay datos",
-                "res": None
-            }
-    
-    try:
-        data = connection.execute(users.select()).fetchall()
-        return is_empty(data) #Funcion para validar el diccionario 'data'
-    except:
-        return {
-            "error": True,
-            "message": "Internal error server: la peticion no se pudo procesar",
-            "res": None
-        }
-"""
 
 #--------- ruta: OBTENER USUARIO --------
 @user.post('/api/v1/getUser', status_code=200, tags=['Usuario'])
@@ -262,13 +232,10 @@ async def login(login: UserLogin):
     appConnect= login.appConnect.strip()
     appConnect= BeautifulSoup(appConnect, features='html.parser').text
 
-    #Recogemos los datos del usuario con el modelo 'UserLogin'
     dataLogin = {"username": username, "password": passw, "appConnect": appConnect}
-        
-
+    
+    
     if verificarVacio(dataLogin) == False: 
-
-        #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario
         
         if es_correo_valido(username) == True:
             #Usando procedimiento almacenado: loginEmail
@@ -500,7 +467,7 @@ async def changePassword(user: ChangePassw):
 
 """
 #********* ruta: ACTUALIZAR *********
-@user.put("/api/v1/actualizar/{keyUser}", tags=["Usuario"])
+@user.put("/api/v1/actualizar/{keyUser", tags=["Usuario"])
 def actualizar(user: UserRequestModel, keyUser: str):
 
     #loginKey= {"keyUser": UserUpdate.keyUser}
