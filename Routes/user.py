@@ -1,5 +1,6 @@
 from email.policy import default
 import re, secrets, bcrypt, base64, hashlib
+from typing import final
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
 from Database.conexion import conn as connection
@@ -85,14 +86,16 @@ def generarToken():
 
 #FUNCION PARA AUTOLOGIN AL REGISTRARSE
 def autoLogin(email, passw):
-    cursor= connection.connection.cursor()
-    
     arg= (email, passw,)
-    cursor.callproc('loginEmail', args=arg)
-    connection.connection.commit()
-    output= cursor.fetchone()
-    userID= output[0]
-    cursor.close()
+    
+    try:
+        cursor= connection.connection.cursor()
+        cursor.callproc('loginEmail', args=arg)
+        connection.connection.commit()
+        output= cursor.fetchone()
+        userID= output[0]
+    finally:
+        cursor.close()
     return userID
 
 
@@ -176,16 +179,18 @@ async def registrar(user: UserRegistro):
             if es_telefono_valido(phone) == True:
                 
                 #Elimina los caracteres del phone
-                phone= re.sub("\!|\'|\?|\ |\(|\)|\-","", phone)
+                phone= re.sub("\!|\'|\?|\ |\(|\)|\-|\+","", phone)
                 
-                cursor= connection.connection.cursor()
-                #Usamos el procedimiento almacenado para registrar el usuario y el token generado.
-                arg= (username, passw, email, name, phone, 0)
-                cursor.callproc('registerUser', args=arg)
-                connection.connection.commit()
-                output= cursor.fetchone()
-                output= output[0]
-                cursor.close()
+                try:
+                    #Usamos el procedimiento almacenado para registrar el usuario y el token generado.
+                    cursor= connection.connection.cursor()
+                    arg= (username, passw, email, name, phone, 0)
+                    cursor.callproc('registerUser', args=arg)
+                    connection.connection.commit()
+                    output= cursor.fetchone()
+                    output= output[0]
+                finally:
+                    cursor.close()
                 
                 if output == 1:
                     
@@ -263,38 +268,42 @@ async def login(login: UserLogin):
 
     dataLogin = {"username": username, "password": passw, "appConnect": appConnect}
     
-    
+    #Comprueba los campos y ejecuta las conexiones
     if verificarVacio(dataLogin) == False: 
         
         if es_correo_valido(username) == True:
-            
-            cursor= connection.connection.cursor()
-            #Usando procedimiento almacenado: loginEmail
-            arg= (username, passw,)
-            cursor.callproc('loginEmail', args=arg)
-            connection.connection.commit()
-            output= cursor.fetchone()
-            cursor.close()
-        
+            try:
+                cursor= connection.connection.cursor()
+                #Usando procedimiento almacenado: loginEmail
+                arg= (username, passw,)
+                cursor.callproc('loginEmail', args=arg)
+                connection.connection.commit()
+                output= cursor.fetchone()
+            finally:
+                cursor.close()
+                
         elif es_telefono_valido(username) == True:
             username= re.sub("\!|\'|\?|\ |\(|\)|\-|\+","", username)
             
-            cursor= connection.connection.cursor()
-            #Usando procedimiento almacenado: loginPhone
-            arg= (username, passw,)
-            cursor.callproc('loginPhone', args=arg)
-            connection.connection.commit()
-            output= cursor.fetchone()
-            cursor.close()
-            
+            try:
+                cursor= connection.connection.cursor()
+                #Usando procedimiento almacenado: loginPhone
+                arg= (username, passw,)
+                cursor.callproc('loginPhone', args=arg)
+                connection.connection.commit()
+                output= cursor.fetchone()
+            finally:
+                cursor.close()
         else:
-            cursor= connection.connection.cursor()
-            #Usando procedimiento almacenado: loginUser
-            arg= (username, passw,)
-            cursor.callproc('loginUser', args=arg)
-            connection.connection.commit()
-            output= cursor.fetchone()
-            cursor.close()
+            try:
+                cursor= connection.connection.cursor()
+                #Usando procedimiento almacenado: loginUser
+                arg= (username, passw,)
+                cursor.callproc('loginUser', args=arg)
+                connection.connection.commit()
+                output= cursor.fetchone()
+            finally:
+                cursor.close()
 
 
         if output != None:
