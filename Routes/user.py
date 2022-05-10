@@ -1,3 +1,4 @@
+from email.policy import default
 import re, secrets, bcrypt, base64, hashlib
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
@@ -73,6 +74,23 @@ def es_correo_valido(correo):
 def es_telefono_valido(phone):
     expresion_regular = r"^[+]?(\d{1,4})?\s?-?[.]?[(]?\d{3}[)]?\s?-?[.]?\d{3}\s?-?[.]?\d{4}$"
     return re.match(expresion_regular, phone) is not None
+
+
+#Generador de token/keyUser.
+def generarToken():
+    payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
+    key = secrets.token_hex(20) + payload
+    token= f.encrypt(key.encode("utf-8"))
+    return token
+
+#FUNCION PARA AUTOLOGIN AL REGISTRARSE
+def autoLogin(email, passw):
+    arg= (email, passw,)
+    cursor.callproc('loginEmail', args=arg)
+    connection.connection.commit()
+    output= cursor.fetchone()
+    userID= output[0]
+    return userID
 
 
 
@@ -154,13 +172,11 @@ async def registrar(user: UserRegistro):
             #Empezamos a procesar el numero de telefono
             if es_telefono_valido(phone) == True:
                 
-                #Generador de token/keyUser.
-                payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
-                key = secrets.token_hex(20) + payload
-                token= f.encrypt(key.encode("utf-8"))
+                #Elimina los caracteres del phone
+                phone= re.sub("\!|\'|\?|\ |\(|\)|\-","", phone)
                 
                 #Usamos el procedimiento almacenado para registrar el usuario y el token generado.
-                arg= (username, passw, email, name, phone, token, 0)
+                arg= (username, passw, email, name, phone, 0)
                 cursor.callproc('registerUser', args=arg)
                 connection.connection.commit()
                 output= cursor.fetchone()
@@ -168,10 +184,18 @@ async def registrar(user: UserRegistro):
                 
                 if output == 1:
                     
+                    token= generarToken()
+                    login= autoLogin(email, passw)
+                    
+                    connection.execute(keys.insert().values(keyUser= token, appConnect="default", userID=login))
+                    
                     return {
                         "error": False,
                         "message": "Usuario agregado correctamente.",
-                        "res": token
+                        "res": {
+                            "appConnect": "default",
+                            "keyUser": token
+                        }
                     }
                 else:
                     return {
@@ -245,6 +269,8 @@ async def login(login: UserLogin):
             output= cursor.fetchone()
         
         elif es_telefono_valido(username) == True:
+            username= re.sub("\!|\'|\?|\ |\(|\)|\-","", username)
+            
             #Usando procedimiento almacenado: loginPhone
             arg= (username, passw,)
             cursor.callproc('loginPhone', args=arg)
@@ -259,16 +285,12 @@ async def login(login: UserLogin):
             output= cursor.fetchone()
 
 
-        #Verificamos con un if si el usuario ingresó correctamente sus credenciales
         if output != None:
-
             #Almacenamos el userID del usuario en 'userIDK'
             output= output[0]
         
             #Generador de token/keyUser
-            payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
-            key = secrets.token_hex(20) + payload
-            token= f.encrypt(key.encode("utf-8"))
+            token= generarToken()
 
             try:
                 dataLogin["keyUser"]= token
