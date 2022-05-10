@@ -7,7 +7,7 @@ from Models.index import users, keys
 from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserLogout, UserSeccion, ChangePassw
 from datetime import datetime
 from cryptography.fernet import Fernet
-from Database.conexion import cursor
+#from Database.conexion import cursor
 
 user = APIRouter()
 
@@ -85,11 +85,14 @@ def generarToken():
 
 #FUNCION PARA AUTOLOGIN AL REGISTRARSE
 def autoLogin(email, passw):
+    cursor= connection.connection.cursor()
+    
     arg= (email, passw,)
     cursor.callproc('loginEmail', args=arg)
     connection.connection.commit()
     output= cursor.fetchone()
     userID= output[0]
+    cursor.close()
     return userID
 
 
@@ -175,12 +178,14 @@ async def registrar(user: UserRegistro):
                 #Elimina los caracteres del phone
                 phone= re.sub("\!|\'|\?|\ |\(|\)|\-","", phone)
                 
+                cursor= connection.connection.cursor()
                 #Usamos el procedimiento almacenado para registrar el usuario y el token generado.
                 arg= (username, passw, email, name, phone, 0)
                 cursor.callproc('registerUser', args=arg)
                 connection.connection.commit()
                 output= cursor.fetchone()
                 output= output[0]
+                cursor.close()
                 
                 if output == 1:
                     
@@ -262,27 +267,34 @@ async def login(login: UserLogin):
     if verificarVacio(dataLogin) == False: 
         
         if es_correo_valido(username) == True:
+            
+            cursor= connection.connection.cursor()
             #Usando procedimiento almacenado: loginEmail
             arg= (username, passw,)
             cursor.callproc('loginEmail', args=arg)
             connection.connection.commit()
             output= cursor.fetchone()
+            cursor.close()
         
         elif es_telefono_valido(username) == True:
-            username= re.sub("\!|\'|\?|\ |\(|\)|\-","", username)
+            username= re.sub("\!|\'|\?|\ |\(|\)|\-|\+","", username)
             
+            cursor= connection.connection.cursor()
             #Usando procedimiento almacenado: loginPhone
             arg= (username, passw,)
             cursor.callproc('loginPhone', args=arg)
             connection.connection.commit()
             output= cursor.fetchone()
+            cursor.close()
             
         else:
+            cursor= connection.connection.cursor()
             #Usando procedimiento almacenado: loginUser
             arg= (username, passw,)
             cursor.callproc('loginUser', args=arg)
             connection.connection.commit()
             output= cursor.fetchone()
+            cursor.close()
 
 
         if output != None:
@@ -294,7 +306,7 @@ async def login(login: UserLogin):
 
             try:
                 dataLogin["keyUser"]= token
-
+                
                 conx= connection.execute(keys.insert().values(keyUser= token, appConnect= appConnect, userID=output))
 
                 return is_empty(conx)
