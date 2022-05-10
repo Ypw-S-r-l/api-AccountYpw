@@ -1,6 +1,4 @@
-from email.policy import default
 import re, secrets, bcrypt, base64, hashlib
-from typing import final
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
 from Database.conexion import conn as connection
@@ -101,7 +99,7 @@ def autoLogin(email, passw):
 
 
 #--------- ruta: OBTENER USUARIO --------
-@user.post('/api/v1/getUser', status_code=200, tags=['Usuario'])
+@user.post('/api/v1/account/getUser', status_code=200, tags=['Usuario'])
 async def obtenerUsuario(user: UserObtener):
     
     appConnect= user.appConnect.strip()
@@ -148,7 +146,7 @@ async def obtenerUsuario(user: UserObtener):
 
 
 #********* ruta: REGISTRAR USUARIO *********
-@user.post('/api/v1/register', status_code=200, tags=['Usuario'])
+@user.post('/api/v1/account/register', status_code=200, tags=['Usuario'])
 async def registrar(user: UserRegistro):
         
     #Obtenemos el correo introducido por el usuario y lo pasa por validador de Email
@@ -234,7 +232,7 @@ async def registrar(user: UserRegistro):
 
 
 #********* ruta: LOGIN *********
-@user.post("/api/v1/login", status_code=200, tags=["Usuario"])
+@user.post("/api/v1/account/login", status_code=200, tags=["Usuario"])
 async def login(login: UserLogin):
 
     #Validando que la connection sea True
@@ -340,7 +338,7 @@ async def login(login: UserLogin):
 
 
 #********* ruta: CERRAR SECCION *********
-@user.post('/api/v1/logout', status_code=200, tags=['Usuario'])
+@user.post('/api/v1/account/logout', status_code=200, tags=['Usuario'])
 async def logout(user: UserLogout):
     
     appConnect= user.appConnect.strip()
@@ -383,7 +381,7 @@ async def logout(user: UserLogout):
 
 
 #********* ruta: OBTENER TODAS LAS APPS DEL USUARIO *********
-@user.post('/api/v1/getSections', status_code=200, tags=['Usuario'])
+@user.post('/api/v1/account/getSections', status_code=200, tags=['Usuario'])
 async def getSections(user: UserSeccion):
 
     #Validando que la connection sea True
@@ -446,7 +444,7 @@ async def getSections(user: UserSeccion):
 
 
 #********* ruta: CAMBIAR CONTRASEÑA DEL USUARIO *********
-@user.post('/api/v1/changePassword', status_code=200, tags=['Usuario'])
+@user.post('/api/v1/account/changePassword', status_code=200, tags=['Usuario'])
 async def changePassword(user: ChangePassw):
             
     appConnect= user.appConnect.strip()
@@ -510,7 +508,7 @@ async def changePassword(user: ChangePassw):
 
 """
 #********* ruta: ACTUALIZAR *********
-@user.put("/api/v1/actualizar/{keyUser", tags=["Usuario"])
+@user.put("/api/v1/account/actualizar/{keyUser", tags=["Usuario"])
 def actualizar(user: UserRequestModel, keyUser: str):
 
     #loginKey= {"keyUser": UserUpdate.keyUser}

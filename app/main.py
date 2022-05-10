@@ -28,7 +28,7 @@ You will be able to:
 app = FastAPI(debug=True,
     title="ApiLogin YPW",
     description=description,
-    version="v1.0.4",
+    version="v1.0.5",
     terms_of_service="https://ypw.com.do/",
     contact={
         "name": "YPW.SRL - Yolfri Páginas Web",
