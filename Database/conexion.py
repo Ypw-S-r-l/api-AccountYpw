@@ -12,4 +12,3 @@ engine = sa.create_engine(URL,
                           pool_recycle=-1)
 meta = sa.MetaData()   #Para enviar propiedades a la tabla 'users'.
 conn = engine.connect()   #Conectando engine a base de datos.
-#cursor= conn.connection.cursor() - Creando la conexion a cursor para tener acceso a la propiedad cursor.

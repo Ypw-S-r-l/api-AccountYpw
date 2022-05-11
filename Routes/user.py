@@ -1,12 +1,11 @@
 import re, secrets, bcrypt, base64, hashlib
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
-from Database.conexion import conn as connection
 from Models.index import users, keys
 from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserLogout, UserSeccion, ChangePassw
 from datetime import datetime
 from cryptography.fernet import Fernet
-#from Database.conexion import cursor
+from Database.conexion import engine
 
 user = APIRouter()
 
@@ -87,13 +86,14 @@ def autoLogin(email, passw):
     arg= (email, passw,)
     
     try:
-        cursor= connection.connection.cursor()
-        cursor.callproc('loginEmail', args=arg)
-        connection.connection.commit()
-        output= cursor.fetchone()
-        userID= output[0]
+        with engine.connect() as conn:
+            cursor= conn.connection.cursor()
+            cursor.callproc('loginEmail', args=arg)
+            conn.connection.commit()
+            output= cursor.fetchone()
+            userID= output[0]
     finally:
-        cursor.close()
+        conn.close()
     return userID
 
 
@@ -114,8 +114,12 @@ async def obtenerUsuario(user: UserObtener):
     #Verificamos si algun campo esta vacio
     if verificarVacio(userArray) == False:
         
-        #Consultamos a la base de datos para obtener el userID del usuario
-        verDatos= connection.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+        try:
+            #Consultamos a la base de datos para obtener el userID del usuario
+            with engine.connect() as conn:
+                verDatos= conn.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+        finally:
+            conn.close()
 
         #Verificamos si ha capturado datos.
         if verDatos != None:
@@ -123,8 +127,12 @@ async def obtenerUsuario(user: UserObtener):
             #Almacenamos en userID el userID del usuario
             userID= verDatos[0]
             
-            #Comprobamos si el userID de las tablas hacen match para obtener todos los datos del usuario
-            response= connection.execute(users.select().where(users.c.userID == userID)).first()
+            try:
+                #Comprobamos si el userID de las tablas hacen match para obtener todos los datos del usuario
+                with engine.connect() as conn:
+                    response= conn.execute(users.select().where(users.c.userID == userID)).first()
+            finally:
+                conn.close()
             
             return {
                 "error": False,
@@ -181,21 +189,26 @@ async def registrar(user: UserRegistro):
                 
                 try:
                     #Usamos el procedimiento almacenado para registrar el usuario y el token generado.
-                    cursor= connection.connection.cursor()
-                    arg= (username, passw, email, name, phone, 0)
-                    cursor.callproc('registerUser', args=arg)
-                    connection.connection.commit()
-                    output= cursor.fetchone()
-                    output= output[0]
+                    with engine.connect() as conn:
+                        cursor= conn.connection.cursor()
+                        arg= (username, passw, email, name, phone, 0)
+                        cursor.callproc('registerUser', args=arg)
+                        conn.connection.commit()
+                        output= cursor.fetchone()
+                        output= output[0]
                 finally:
-                    cursor.close()
+                    conn.close()
                 
                 if output == 1:
                     
                     token= generarToken()
                     login= autoLogin(email, passw)
                     
-                    connection.execute(keys.insert().values(keyUser= token, appConnect="default", userID=login))
+                    try:
+                        with engine.connect() as conn:
+                            conn.execute(keys.insert().values(keyUser= token, appConnect="default", userID=login))
+                    finally:
+                        conn.close()
                     
                     return {
                         "error": False,
@@ -270,38 +283,42 @@ async def login(login: UserLogin):
     if verificarVacio(dataLogin) == False: 
         
         if es_correo_valido(username) == True:
+            
             try:
-                cursor= connection.connection.cursor()
                 #Usando procedimiento almacenado: loginEmail
-                arg= (username, passw,)
-                cursor.callproc('loginEmail', args=arg)
-                connection.connection.commit()
-                output= cursor.fetchone()
+                with engine.connect() as conn:
+                    cursor= conn.connection.cursor()
+                    arg= (username, passw,)
+                    cursor.callproc('loginEmail', args=arg)
+                    conn.connection.commit()
+                    output= cursor.fetchone()
             finally:
-                cursor.close()
+                conn.close()
                 
         elif es_telefono_valido(username) == True:
             username= re.sub("\!|\'|\?|\ |\(|\)|\-|\+","", username)
             
             try:
-                cursor= connection.connection.cursor()
                 #Usando procedimiento almacenado: loginPhone
-                arg= (username, passw,)
-                cursor.callproc('loginPhone', args=arg)
-                connection.connection.commit()
-                output= cursor.fetchone()
+                with engine.connect() as conn:
+                    cursor= conn.connection.cursor()
+                    arg= (username, passw,)
+                    cursor.callproc('loginPhone', args=arg)
+                    conn.connection.commit()
+                    output= cursor.fetchone()
             finally:
-                cursor.close()
+                conn.close()
         else:
             try:
-                cursor= connection.connection.cursor()
                 #Usando procedimiento almacenado: loginUser
-                arg= (username, passw,)
-                cursor.callproc('loginUser', args=arg)
-                connection.connection.commit()
-                output= cursor.fetchone()
+                with engine.connect() as conn:
+                    cursor= conn.connection.cursor()
+                    arg= (username, passw,)
+                    cursor.callproc('loginUser', args=arg)
+                    conn.connection.commit()
+                    output= cursor.fetchone()
             finally:
-                cursor.close()
+                conn.close()
 
 
         if output != None:
@@ -314,7 +331,11 @@ async def login(login: UserLogin):
             try:
                 dataLogin["keyUser"]= token
                 
-                conx= connection.execute(keys.insert().values(keyUser= token, appConnect= appConnect, userID=output))
+                try:
+                    with engine.connect() as conn:
+                        conx= conn.execute(keys.insert().values(keyUser= token, appConnect= appConnect, userID=output))
+                finally:
+                    conn.close()
 
                 return is_empty(conx)
             except:
@@ -353,13 +374,22 @@ async def logout(user: UserLogout):
     #Verificamos si algun campo esta vacio
     if verificarVacio(userArray) == False:
         
-        #Consultamos a la base de datos para obtener el userID del usuario
-        verSeccion= connection.execute(keys.select().where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+        try:
+            #Consultamos a la base de datos para obtener el userID del usuario
+            with engine.connect() as conn:
+                verSeccion= conn.execute(keys.select().where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+        finally:
+            conn.close()
 
         #Verificamos si ha capturado datos.
         if verSeccion != None:
             
-            connection.execute(keys.delete().where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect))
+            try:
+                #Consultamos a la base de datos para eliminar el usuario
+                with engine.connect() as conn:
+                    conn.execute(keys.delete().where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect))
+            finally:
+                conn.close()
         
             return {
                 "error": False,
@@ -410,8 +440,12 @@ async def getSections(user: UserSeccion):
 
     if verificarVacio(userArray) == False:
         
-        #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario.
-        login= connection.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+        try:
+            #Peticiones a la base de datos para obtener y validar los datos ingresados por el usuario.
+            with engine.connect() as conn:
+                login= conn.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+        finally:
+            conn.close()
         
         #Verificamos con un if si el usuario ingresó correctamente sus credenciales.
         if login != None:
@@ -420,7 +454,11 @@ async def getSections(user: UserSeccion):
                 #Almacenamos el userID del usuario en 'userIDU'
                 userIDU= login[0]
                 
-                conx= connection.execute(keys.select().where(keys.c.userID == userIDU)).fetchall()
+                try:
+                    with engine.connect() as conn:
+                        conx= conn.execute(keys.select().where(keys.c.userID == userIDU)).fetchall()
+                finally:
+                    conn.close()
 
                 return is_empty(conx)
             except:
@@ -466,20 +504,31 @@ async def changePassword(user: ChangePassw):
     #Verificamos si algun campo esta vacio
     if verificarVacio(userArray) == False:
         
-        #Consultamos a la base de datos para obtener el userID del usuario
-        vlogin= connection.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+        try:
+            #Consultamos a la base de datos para obtener el userID del usuario
+            with engine.connect() as conn:
+                vlogin= conn.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+        finally:
+            conn.close()
             
         #Verificamos si ha capturado datos.
         if vlogin != None:
             
             userIDU= vlogin[0]
             
-            connection.execute(users.update().values(password= newPassw).where(users.c.userID == userIDU))
-
+            try:
+                with engine.connect() as conn:
+                    conn.execute(users.update().values(password= newPassw).where(users.c.userID == userIDU))
+            finally:
+                conn.close()
+                
             if removeSections == True:
-                
-                connection.execute(keys.delete().where(keys.c.userID == userIDU))
-                
+                try:
+                    with engine.connect() as conn:
+                        conn.execute(keys.delete().where(keys.c.userID == userIDU))
+                finally:
+                    conn.close()
+                    
                 return {
                     "error": False,
                     "message": {
