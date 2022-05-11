@@ -93,7 +93,7 @@ def autoLogin(email, passw):
         output= cursor.fetchone()
         userID= output[0]
     finally:
-        cursor.close()
+        connection.close()
     return userID
 
 
@@ -188,7 +188,7 @@ async def registrar(user: UserRegistro):
                     output= cursor.fetchone()
                     output= output[0]
                 finally:
-                    cursor.close()
+                    connection.close()
                 
                 if output == 1:
                     
@@ -278,7 +278,7 @@ async def login(login: UserLogin):
                 connection.connection.commit()
                 output= cursor.fetchone()
             finally:
-                cursor.close()
+                connection.close()
                 
         elif es_telefono_valido(username) == True:
             username= re.sub("\!|\'|\?|\ |\(|\)|\-|\+","", username)
@@ -291,7 +291,7 @@ async def login(login: UserLogin):
                 connection.connection.commit()
                 output= cursor.fetchone()
             finally:
-                cursor.close()
+                connection.close()
         else:
             try:
                 cursor= connection.connection.cursor()
@@ -301,7 +301,7 @@ async def login(login: UserLogin):
                 connection.connection.commit()
                 output= cursor.fetchone()
             finally:
-                cursor.close()
+                connection.close()
 
 
         if output != None:
@@ -359,7 +359,7 @@ async def logout(user: UserLogout):
         #Verificamos si ha capturado datos.
         if verSeccion != None:
 
-            eliminarSeccion= connection.execute(keys.delete().where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect))
+            connection.execute(keys.delete().where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect))
         
             return {
                 "error": False,
