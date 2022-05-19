@@ -39,6 +39,7 @@ class UserRequestModel(BaseModel):
     userDB: Optional[str]= ""
     puertoDB: Optional[str]= ""
     pagWeb: Optional[str]= ""
+    data: dict  #JSON
 
     class Config:
         arbitrary_types_allowed = True
