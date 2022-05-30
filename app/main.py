@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Request
-import uvicorn, asyncio
-from Database.conexion import engine as connection
+import uvicorn
 from Routes.user import user
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -28,7 +27,7 @@ You will be able to:
 app = FastAPI(debug=True,
     title="ApiLogin YPW",
     description=description,
-    version="v1.0.11",
+    version="v1.0.12",
     terms_of_service="https://ypw.com.do/",
     contact={
         "name": "YPW.SRL - Yolfri Páginas Web",
