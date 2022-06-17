@@ -1,8 +1,10 @@
-import re, secrets, bcrypt, base64, hashlib
+import re, secrets, bcrypt, base64, hashlib, random
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
+from sqlalchemy import text
 from Models.index import users, keys
-from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserLogout, UserSeccion, ChangePassw
+from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserLogout, UserSeccion, ChangePassw, SetCode, RecoveryPassCode
+from config.email import enviarEmail
 from datetime import datetime
 from cryptography.fernet import Fernet
 from Database.conexion import engine
@@ -80,6 +82,10 @@ def generarToken():
     key = secrets.token_hex(20) + payload
     token= f.encrypt(key.encode("utf-8"))
     return token
+
+def generarCode():
+    codetmp= random.randint(100000, 999999)
+    return codetmp
 
 #FUNCION PARA AUTOLOGIN AL REGISTRARSE
 def autoLogin(email, passw):
@@ -510,7 +516,7 @@ async def changePassword(user: ChangePassw):
                 vlogin= conn.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
         finally:
             conn.close()
-            
+        
         #Verificamos si ha capturado datos.
         if vlogin != None:
             
@@ -521,14 +527,14 @@ async def changePassword(user: ChangePassw):
                     conn.execute(users.update().values(password= newPassw).where(users.c.userID == userIDU))
             finally:
                 conn.close()
-                
+            
             if removeSections == True:
                 try:
                     with engine.connect() as conn:
                         conn.execute(keys.delete().where(keys.c.userID == userIDU))
                 finally:
                     conn.close()
-                    
+                
                 return {
                     "error": False,
                     "message": {
@@ -555,6 +561,133 @@ async def changePassword(user: ChangePassw):
             "message":"Existen campos vacios.",
             "res": None
         }
+
+#--------- ruta: ENVIO DE CODIGO A EMAIL --------
+@user.post('/api/v1/account/setCode', status_code=200, tags=['Usuario'])
+async def enviarPassCode(user: SetCode):
+    
+    email= user.email.strip()
+    email= BeautifulSoup(email, features='html.parser').text
+    
+    dataRecovery= {"email": email}
+    
+    #Comprueba los campos y ejecuta las conexiones
+    if verificarVacio(dataRecovery) == False: 
+        
+        if es_correo_valido(email) == True:
+            
+            try:
+                with engine.connect() as conn:
+                    sql= text("select email from users where email=:email")
+                    output= conn.execute(sql, email=email).first()
+            finally:
+                conn.close()
+            
+            if output != None:
+                
+                #Generando codigo de verificacion
+                codeTMP= generarCode()
+                
+                try:
+                    with engine.connect() as conn:
+                        conn.execute(users.update().values(codetmp=codeTMP).where(users.c.email == email))
+                finally:
+                    conn.close()
+                
+                if enviarEmail(email, codeTMP) == None:
+                    
+                    return {
+                        "error": False,
+                        "message": "Correo enviado exitosamente.",
+                        "res": None
+                    }
+                else:
+                    return {
+                        "error": False,
+                        "message": "Correo no se pudo enviar.",
+                        "res": None
+                    }
+            else:
+                return {
+                    "error": True,
+                    "message": "Correo electrónico no encontrado.",
+                    "res": None
+                }
+        else:
+            return {
+                "error": True,
+                "message":"Correo electrónico inválido.",
+                "res": None
+            }
+    else:
+        return {
+            "error": True,
+            "message":"Existen campos vacios.",
+            "res": None
+        }
+
+#--------- ruta: OBTENER USUARIO --------
+@user.post('/api/v1/account/changePasswCode', status_code=200, tags=['Usuario'])
+async def cambiarPassCode(user: RecoveryPassCode):
+    
+    email= user.email.strip()
+    email= BeautifulSoup(email, features='html.parser').text
+    
+    codetmp= user.codetmp.strip()
+    codetmp= BeautifulSoup(codetmp, features='html.parser').text
+    
+    newPassword= user.newPassword.strip()
+    newPassword= BeautifulSoup(newPassword, features='html.parser').text
+    newPassw= newPassword.encode()
+    newPassw= encrytPassw(newPassw)
+    
+    dataRecovery= {"email": email, "codetmp": codetmp, "newPassword": newPassw}
+    
+    #Comprueba los campos y ejecuta las conexiones
+    if verificarVacio(dataRecovery) == False: 
+        
+        if es_correo_valido(email) == True:
+            
+            try:
+                with engine.connect() as conn:
+                    sql= text("select * from users where email=:email and codetmp=:codetmp")
+                    output= conn.execute(sql, email=email, codetmp=codetmp).first()
+            finally:
+                conn.close()
+            
+            
+            if output != None:
+                
+                try:
+                    with engine.connect() as conn:
+                        conn.execute(users.update().values(password= newPassw, codetmp=None).where(users.c.codetmp == codetmp, users.c.email == email))
+                finally:
+                    conn.close()
+                
+                return {
+                    "error": True,
+                    "message":"Contraseña ha sido restablecida exitosamente.",
+                    "res": None
+                }
+            else:
+                return {
+                    "error": True,
+                    "message": "Correo electrónico y/o Password inválido/s",
+                    "res": None
+                }
+        else:
+            return {
+                "error": True,
+                "message":"Correo electrónico inválido.",
+                "res": None
+            }
+    else:
+        return {
+            "error": True,
+            "message":"Existen campos vacios.",
+            "res": None
+        }
+
 
 """
 #********* ruta: ACTUALIZAR *********
