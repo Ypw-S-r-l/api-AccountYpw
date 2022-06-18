@@ -27,7 +27,6 @@ def enviarEmail(destino, code):
 
             <h3 style="text-align: center;">Recuperación de contraseñas</h3>
             <p style="text-align: center;">Recientemente ha solicitado restablecer la contraseña de la cuenta asociada con esta dirección de correo electrónico.</p>
-            
             <h2 style="text-align: center; margin=1rem; color:#006AAB">{code}</h2>
             <p style="text-align: center;">Introduzca este código en página de restablecimiento de contraseñas.</p>
             <p style="text-align: center;">¿No ha realizado esta solicitud? <a href="https://ypw.com.do/#about" target="_blank" rel="noopener" data-saferedirecturl="https://www.google.com/url?q=https://identity.cisco.com/ui/tenants/global/v1.0/about-ui/contact-us?navStateId%3D5da73358-94bd-4929-926d-72968cf6a650&amp;source=gmail&amp;ust=1655580079000000&amp;usg=AOvVaw1M_l5UPChy57e1SK6v67CC">Póngase en contacto con el servicio de asistencia en YPW.SRL</a>.</p>
