@@ -665,7 +665,7 @@ async def cambiarPassCode(user: RecoveryPassCode):
                     conn.close()
                 
                 return {
-                    "error": True,
+                    "error": False,
                     "message":"Contraseña ha sido restablecida exitosamente.",
                     "res": None
                 }
