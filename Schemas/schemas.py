@@ -12,7 +12,7 @@ def stripTarget(cadena):
 
 
 #***** MODELO CLIENTE: solicitud *****
-class UserRequestModel(BaseModel):
+class UserUpdate(BaseModel):
     username: Optional[str]= ""
     password: Optional[str]= ""
     name: Optional[str]= ""
@@ -44,9 +44,6 @@ class UserRequestModel(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-
-class UserResponseModel(UserRequestModel):
-    userID: int
 
 
 #***** REGISTRO ***** modelo
@@ -92,12 +89,12 @@ class ChangePassw(BaseModel):
 #***** ENVIAR CODIGO POR CORREO ****** modelo
 class SetCode(BaseModel):
     email: str
+    header: Optional[str]= ""
+    support: Optional[str]= ""
+    footer: Optional[str]= ""
 
 #***** RECUPERAR PASSWORD POR CODIGO ****** modelo
 class RecoveryPassCode(BaseModel):
     email: str
     codetmp: str
     newPassword: str
-
-
-#**** MODELOS DE ERRORES HTTPEXCEPTION **** modelo

@@ -1,9 +1,9 @@
-import re, secrets, bcrypt, base64, hashlib, random
+import re, secrets, bcrypt, base64, hashlib, random, warnings
 from fastapi import APIRouter
 from bs4 import BeautifulSoup
 from sqlalchemy import text
 from Models.index import users, keys
-from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserLogout, UserSeccion, ChangePassw, SetCode, RecoveryPassCode
+from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserUpdate, UserLogout, UserSeccion, ChangePassw, SetCode, RecoveryPassCode
 from config.email import enviarEmail
 from datetime import datetime
 from cryptography.fernet import Fernet
@@ -566,10 +566,38 @@ async def changePassword(user: ChangePassw):
 @user.post('/api/v1/account/setCode', status_code=200, tags=['Usuario'])
 async def enviarPassCode(user: SetCode):
     
+    #>> Elimina fallas de la libreria: BeautifulSoup
+    warnings.filterwarnings("ignore", category=UserWarning, module='bs4')
+    
+    #>> Verificar el envio del correo: capturando errores
+    def verEnvioEmail(email, codeTMP, header, support, footer):
+        if enviarEmail(email, codeTMP, header, support, footer) == None:
+            return {
+                "error": False,
+                "message": "Correo enviado exitosamente.",
+                "res": None
+            }
+        else:
+            return {
+                "error": False,
+                "message": "Correo no se pudo enviar.",
+                "res": None
+            }
+    
     email= user.email.strip()
     email= BeautifulSoup(email, features='html.parser').text
     
+    header= user.header.strip()
+    header= BeautifulSoup(header, features='html.parser').text
+    
+    support= user.support.strip()
+    support= BeautifulSoup(support, features='html.parser').text
+    
+    footer= user.footer.strip()
+    footer= BeautifulSoup(footer, features='html.parser').text
+    
     dataRecovery= {"email": email}
+    arrayEmail= {"header": header, "support": support, "footer": footer}
     
     #Comprueba los campos y ejecuta las conexiones
     if verificarVacio(dataRecovery) == False: 
@@ -594,19 +622,14 @@ async def enviarPassCode(user: SetCode):
                 finally:
                     conn.close()
                 
-                if enviarEmail(email, codeTMP) == None:
-                    
-                    return {
-                        "error": False,
-                        "message": "Correo enviado exitosamente.",
-                        "res": None
-                    }
+                if verificarVacio(arrayEmail) == False:
+                    return verEnvioEmail(email, codeTMP, header, support, footer)
                 else:
-                    return {
-                        "error": False,
-                        "message": "Correo no se pudo enviar.",
-                        "res": None
-                    }
+                    header= "https://realtyhs.s3.us-east-2.amazonaws.com/wp-content/uploads/2021/12/10005101/descarga.png"
+                    support= "https://ypw.com.do/#about"
+                    footer= "2022 © YPW S.R.L"
+                    
+                    return verEnvioEmail(email, codeTMP, header, support, footer)
             else:
                 return {
                     "error": True,
@@ -689,39 +712,81 @@ async def cambiarPassCode(user: RecoveryPassCode):
         }
 
 
-"""
 #********* ruta: ACTUALIZAR *********
-@user.put("/api/v1/account/actualizar/{keyUser", tags=["Usuario"])
-def actualizar(user: UserRequestModel, keyUser: str):
-
-    #loginKey= {"keyUser": UserUpdate.keyUser}
-    key = connection.execute(users.select().where(users.c.keyUser == keyUser)).first()
-
-    def is_empty(data_structure):
-        if data_structure:
-            return {
-                "error": False,
-                "message": "Datos actualizados",
-                "res": update
-            }
-        else:
-            return {
-                "error": True,
-                "message": "Los datos no se pudieron actualizar",
-                "res": None
-            }
+@user.put("/api/v1/account/updateUser", tags=["Usuario"])
+async def actualizarUsuario(user: UserUpdate):
     
+    dateOfBirth= user.dateOfBirth.strip()
+    dateOfBirth= BeautifulSoup(dateOfBirth, features='html.parser').text
+    
+    language= user.language.strip()
+    language= BeautifulSoup(language, features='html.parser').text
+
+    country= user.country.strip()
+    country= BeautifulSoup(country, features='html.parser').text
+
+    ypwCashBalance= user.ypwCashBalance.strip()
+    ypwCashBalance= BeautifulSoup(ypwCashBalance, features='html.parser').text
+
+    shippingAddress= user.shippingAddress.strip()
+    shippingAddress= BeautifulSoup(shippingAddress, features='html.parser').text
+
+    identificationCard= user.identificationCard.strip()
+    identificationCard= BeautifulSoup(identificationCard, features='html.parser').text
+
+    accountVersion= user.accountVersion.strip()
+    accountVersion= BeautifulSoup(accountVersion, features='html.parser').text
+
+    timeZone= user.timeZone.strip()
+    timeZone= BeautifulSoup(timeZone, features='html.parser').text
+
+    recoveryCode= user.recoveryCode.strip()
+    recoveryCode= BeautifulSoup(recoveryCode, features='html.parser').text
+    
+    applications= user.applications.strip()
+    applications= BeautifulSoup(applications, features='html.parser').text
+    
+    limitations= user.limitations.strip()
+    limitations= BeautifulSoup(limitations, features='html.parser').text
+    
+    accountType= user.accountType.strip()
+    accountType= BeautifulSoup(accountType, features='html.parser').text
+    
+    tradingExits= user.tradingExits.strip()
+    tradingExits= BeautifulSoup(tradingExits, features='html.parser').text
+    
+    pendingInvoices= user.pendingInvoices.strip()
+    pendingInvoices= BeautifulSoup(pendingInvoices, features='html.parser').text
+    
+    bills= user.bills.strip()
+    bills= BeautifulSoup(bills, features='html.parser').text
+    
+    subscriptions= user.subscriptions.strip()
+    subscriptions= BeautifulSoup(subscriptions, features='html.parser').text
+    
+    metodoPago= user.metodoPago.strip()
+    metodoPago= BeautifulSoup(metodoPago, features='html.parser').text
+    
+    servidorDB= user.servidorDB.strip()
+    servidorDB= BeautifulSoup(servidorDB, features='html.parser').text
+    
+    userDB= user.userDB.strip()
+    userDB= BeautifulSoup(userDB, features='html.parser').text
+    
+    puertoDB= user.puertoDB.strip()
+    puertoDB= BeautifulSoup(puertoDB, features='html.parser').text
+    
+    pagWeb= user.pagWeb.strip()
+    pagWeb= BeautifulSoup(pagWeb, features='html.parser').text
+    
+    data= user.data.strip()
+    data= BeautifulSoup(data, features='html.parser').text
+            
     #Empezamos a recibir y enviar datos a la base de datos
     try:
 
         if key:
-        
-            username= user.username
-            password= user.password
-            name= user.name
-            email= user.email
-            phone= user.phone
-            dateOfBirth= user.dateOfBirth
+            
             language= user.language
             country= user.country
             ypwCashBalance= user.ypwCashBalance
@@ -742,9 +807,9 @@ def actualizar(user: UserRequestModel, keyUser: str):
             userDB= user.userDB
             puertoDB= user.puertoDB
             pagWeb= user.pagWeb
+            data= user.data
 
-            update= {"username": username, "password": password, "name": name, "email": email, "phone": phone, 
-            "dateOfBirth": dateOfBirth, "language": language, 
+            update= {"dateOfBirth": dateOfBirth, "language": language, 
             "country": country, "ypwCashBalance": ypwCashBalance, 
             "shippingAddress": shippingAddress, "identificationCard": identificationCard, 
             "accountVersion": accountVersion, "timeZone": timeZone, 
@@ -753,15 +818,30 @@ def actualizar(user: UserRequestModel, keyUser: str):
             "tradingExits": tradingExits, "pendingInvoices": pendingInvoices, 
             "bills": bills, "subscriptions": subscriptions, 
             "metodoPago": metodoPago, "servidorDB": servidorDB, 
-            "userDB": userDB, "puertoDB": puertoDB, "pagWeb": pagWeb}
-
-            conx= connection.execute(users.update().values(update).where(users.c.keyUser == keyUser))
-
-            return is_empty(conx)
+            "userDB": userDB, "puertoDB": puertoDB, "pagWeb": pagWeb, "data": data}
+            
+            try:
+                with engine.connect() as conn:
+                    conx= conn.execute(users.update().values(update).where(users.c.data == data))
+            finally:
+                conn.close()
+                
+            if conx:
+                return {
+                    "error": False,
+                    "message": "Datos actualizados exitosamente.",
+                    "res": update
+                }
+            else:
+                return {
+                    "error": True,
+                    "message": "Los datos no se pudieron actualizar.",
+                    "res": None
+                }
         else:
             return {
                 "error": True,
-                "message": "keyUser inválido: usuario no encontrado.",
+                "message": "Usuario no encontrado.",
                 "res": None
             }
     except:
@@ -770,4 +850,3 @@ def actualizar(user: UserRequestModel, keyUser: str):
             "message": "La peticion no pudo ser procesada.",
             "res": None
         }
-"""
