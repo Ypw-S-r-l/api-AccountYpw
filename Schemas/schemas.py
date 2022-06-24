@@ -11,39 +11,16 @@ def stripTarget(cadena):
     return tex
 
 
-#***** MODELO CLIENTE: solicitud *****
+#***** MODELO CLIENTE: actualizar datos principales *****
 class UserUpdate(BaseModel):
     username: Optional[str]= ""
     password: Optional[str]= ""
     name: Optional[str]= ""
     email: Optional[str]= ""
     phone: Optional[str]= ""
-    dateOfBirth: Optional[str]= ""
-    language: Optional[str]= ""
-    country: Optional[str]= ""
-    ypwCashBalance: Optional[str]= ""
-    shippingAddress: dict #JSON
-    identificationCard: Optional[str]= ""
-    accountVersion: Optional[str]= ""
-    timeZone: Optional[str]= ""
-    recoveryCode: Optional[str]= ""
-    applications: dict #JSON
-    limitations: dict  #JSON
-    accountType: Optional[str]= ""
-    tradingExits: dict #JSON
-    pendingInvoices: dict  #JSON
-    bills: dict  #JSON
-    subscriptions: dict  #JSON
-    metodoPago: Optional[str]= ""
-    servidorDB: Optional[str]= ""
-    userDB: Optional[str]= ""
-    puertoDB: Optional[str]= ""
-    pagWeb: Optional[str]= ""
-    data: dict  #JSON
-
+    
     class Config:
         arbitrary_types_allowed = True
-
 
 
 #***** REGISTRO ***** modelo
@@ -98,3 +75,34 @@ class RecoveryPassCode(BaseModel):
     email: str
     codetmp: str
     newPassword: str
+
+
+#***** MODELO CLIENTE: actualizar datos secundarios *****
+class UserUpdateOpcional(BaseModel):
+    appConnect: str
+    keyUser: str
+    dateOfBirth: Optional[str]= ""
+    language: Optional[str]= ""
+    country: Optional[str]= ""
+    ypwCashBalance: Optional[str]= ""
+    shippingAddress: Optional[dict] #JSON
+    identificationCard: Optional[str]= ""
+    accountVersion: Optional[str]= ""
+    timeZone: Optional[str]= ""
+    recoveryCode: Optional[str]= ""
+    applications: Optional[dict] #JSON
+    limitations: Optional[dict]  #JSON
+    accountType: Optional[str]= ""
+    tradingExits: Optional[dict] #JSON
+    pendingInvoices: Optional[dict]  #JSON
+    bills: Optional[dict]  #JSON
+    subscriptions: Optional[dict]  #JSON
+    metodoPago: Optional[str]= ""
+    servidorDB: Optional[str]= ""
+    userDB: Optional[str]= ""
+    puertoDB: Optional[str]= ""
+    pagWeb: Optional[str]= ""
+    data: Optional[dict]  #JSON
+
+    class Config:
+        arbitrary_types_allowed = True

@@ -1,9 +1,10 @@
 import re, secrets, bcrypt, base64, hashlib, random, warnings
-from fastapi import APIRouter
+from starlette.status import *
+from fastapi import APIRouter, Response
 from bs4 import BeautifulSoup
 from sqlalchemy import text
 from Models.index import users, keys
-from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserUpdate, UserLogout, UserSeccion, ChangePassw, SetCode, RecoveryPassCode
+from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserUpdate, UserUpdateOpcional, UserLogout, UserSeccion, ChangePassw, SetCode, RecoveryPassCode
 from config.email import enviarEmail
 from datetime import datetime
 from cryptography.fernet import Fernet
@@ -667,7 +668,7 @@ async def cambiarPassCode(user: RecoveryPassCode):
     dataRecovery= {"email": email, "codetmp": codetmp, "newPassword": newPassw}
     
     #Comprueba los campos y ejecuta las conexiones
-    if verificarVacio(dataRecovery) == False: 
+    if verificarVacio(dataRecovery) == False:
         
         if es_correo_valido(email) == True:
             
@@ -713,24 +714,30 @@ async def cambiarPassCode(user: RecoveryPassCode):
 
 
 #********* ruta: ACTUALIZAR *********
-@user.put("/api/v1/account/updateUser", tags=["Usuario"])
-async def actualizarUsuario(user: UserUpdate):
+@user.put("/api/v1/account/updateDataUser", status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
+async def actualizarDatos(user: UserUpdateOpcional):
+    
+    appConnect= user.appConnect.strip()
+    appConnect= BeautifulSoup(appConnect, features='html.parser').text
+
+    keyUser= user.keyUser.strip()
+    keyUser= BeautifulSoup(keyUser, features='html.parser').text
     
     dateOfBirth= user.dateOfBirth.strip()
     dateOfBirth= BeautifulSoup(dateOfBirth, features='html.parser').text
     
     language= user.language.strip()
     language= BeautifulSoup(language, features='html.parser').text
-
+    
     country= user.country.strip()
     country= BeautifulSoup(country, features='html.parser').text
-
+    
     ypwCashBalance= user.ypwCashBalance.strip()
     ypwCashBalance= BeautifulSoup(ypwCashBalance, features='html.parser').text
-
-    shippingAddress= user.shippingAddress.strip()
-    shippingAddress= BeautifulSoup(shippingAddress, features='html.parser').text
-
+    
+    shippingAddress= user.shippingAddress
+    #shippingAddress= BeautifulSoup(shippingAddress, features='html.parser').text
+    
     identificationCard= user.identificationCard.strip()
     identificationCard= BeautifulSoup(identificationCard, features='html.parser').text
 
@@ -743,26 +750,26 @@ async def actualizarUsuario(user: UserUpdate):
     recoveryCode= user.recoveryCode.strip()
     recoveryCode= BeautifulSoup(recoveryCode, features='html.parser').text
     
-    applications= user.applications.strip()
-    applications= BeautifulSoup(applications, features='html.parser').text
+    applications= user.applications
+    #applications= BeautifulSoup(applications, features='html.parser').text
     
-    limitations= user.limitations.strip()
-    limitations= BeautifulSoup(limitations, features='html.parser').text
+    limitations= user.limitations
+    #limitations= BeautifulSoup(limitations, features='html.parser').text
     
     accountType= user.accountType.strip()
     accountType= BeautifulSoup(accountType, features='html.parser').text
     
-    tradingExits= user.tradingExits.strip()
-    tradingExits= BeautifulSoup(tradingExits, features='html.parser').text
+    tradingExits= user.tradingExits
+    #tradingExits= BeautifulSoup(tradingExits, features='html.parser').text
     
-    pendingInvoices= user.pendingInvoices.strip()
-    pendingInvoices= BeautifulSoup(pendingInvoices, features='html.parser').text
+    pendingInvoices= user.pendingInvoices
+    #pendingInvoices= BeautifulSoup(pendingInvoices, features='html.parser').text
     
-    bills= user.bills.strip()
-    bills= BeautifulSoup(bills, features='html.parser').text
+    bills= user.bills
+    #bills= BeautifulSoup(bills, features='html.parser').text
     
-    subscriptions= user.subscriptions.strip()
-    subscriptions= BeautifulSoup(subscriptions, features='html.parser').text
+    subscriptions= user.subscriptions
+    #subscriptions= BeautifulSoup(subscriptions, features='html.parser').text
     
     metodoPago= user.metodoPago.strip()
     metodoPago= BeautifulSoup(metodoPago, features='html.parser').text
@@ -779,74 +786,55 @@ async def actualizarUsuario(user: UserUpdate):
     pagWeb= user.pagWeb.strip()
     pagWeb= BeautifulSoup(pagWeb, features='html.parser').text
     
-    data= user.data.strip()
-    data= BeautifulSoup(data, features='html.parser').text
+    data= user.data
+    #data= BeautifulSoup(data, features='html.parser').text
+    
+    update= {"dateOfBirth": dateOfBirth, "language": language, 
+    "country": country, "ypwCashBalance": ypwCashBalance, 
+    "shippingAddress": shippingAddress, "identificationCard": identificationCard, 
+    "accountVersion": accountVersion, "timeZone": timeZone, 
+    "recoveryCode": recoveryCode, "applications": applications, 
+    "limitations": limitations, "accountType": accountType, 
+    "tradingExits": tradingExits, "pendingInvoices": pendingInvoices, 
+    "bills": bills, "subscriptions": subscriptions, 
+    "metodoPago": metodoPago, "servidorDB": servidorDB, 
+    "userDB": userDB, "puertoDB": puertoDB, "pagWeb": pagWeb, "data": data}
+    
+    array= {"keyUser": keyUser, "appConnect": appConnect}
+    
+    if verificarVacio(array) == False:
+        #Consultamos a la base de datos para obtener el userID del usuario 
+        try:
+            with engine.connect() as conn:
+                vlogin= conn.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+        finally:
+            conn.close()
+        
+        if vlogin != None:
             
-    #Empezamos a recibir y enviar datos a la base de datos
-    try:
-
-        if key:
-            
-            language= user.language
-            country= user.country
-            ypwCashBalance= user.ypwCashBalance
-            shippingAddress= user.shippingAddress 
-            identificationCard= user.identificationCard
-            accountVersion= user.accountVersion
-            timeZone= user.timeZone
-            recoveryCode= user.recoveryCode
-            applications= user.applications
-            limitations= user.limitations
-            accountType= user.accountType
-            tradingExits= user.tradingExits
-            pendingInvoices= user.pendingInvoices
-            bills= user.bills
-            subscriptions= user.subscriptions
-            metodoPago= user.metodoPago
-            servidorDB= user.servidorDB
-            userDB= user.userDB
-            puertoDB= user.puertoDB
-            pagWeb= user.pagWeb
-            data= user.data
-
-            update= {"dateOfBirth": dateOfBirth, "language": language, 
-            "country": country, "ypwCashBalance": ypwCashBalance, 
-            "shippingAddress": shippingAddress, "identificationCard": identificationCard, 
-            "accountVersion": accountVersion, "timeZone": timeZone, 
-            "recoveryCode": recoveryCode, "applications": applications, 
-            "limitations": limitations, "accountType": accountType, 
-            "tradingExits": tradingExits, "pendingInvoices": pendingInvoices, 
-            "bills": bills, "subscriptions": subscriptions, 
-            "metodoPago": metodoPago, "servidorDB": servidorDB, 
-            "userDB": userDB, "puertoDB": puertoDB, "pagWeb": pagWeb, "data": data}
+            userID= vlogin[0]
+            print(userID)
             
             try:
                 with engine.connect() as conn:
-                    conx= conn.execute(users.update().values(update).where(users.c.data == data))
+                    conn.execute(users.update().values(update).where(users.c.userID == userID))
             finally:
                 conn.close()
-                
-            if conx:
-                return {
-                    "error": False,
-                    "message": "Datos actualizados exitosamente.",
-                    "res": update
-                }
-            else:
-                return {
-                    "error": True,
-                    "message": "Los datos no se pudieron actualizar.",
-                    "res": None
-                }
+            
+            return {
+                "error": False,
+                "message": "Datos actualizados exitosamente.",
+                "res": update
+            }
         else:
             return {
                 "error": True,
-                "message": "Usuario no encontrado.",
+                "message": "No se encontró la seccion.",
                 "res": None
             }
-    except:
+    else:
         return {
             "error": True,
-            "message": "La peticion no pudo ser procesada.",
+            "message":"Existen campos vacios.",
             "res": None
         }

@@ -10,7 +10,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 description = """
-LoginYPW API helps you do awesome stuff. 🚀
+AccountYPW API helps you do awesome stuff. 🚀
 
 ## Users
 
@@ -22,12 +22,15 @@ You will be able to:
 * **Get users** (_implemented_).
 * **Get sections** (_implemented_).
 * **Change password** (_implemented_).
+* **Set recovery code** (_implemented_).
+* **Change password code** (_implemented_).
+* **Update all data user** (_implemented_).
 """
 
 app = FastAPI(debug=True,
-    title="ApiLogin YPW",
+    title="Account YPW",
     description=description,
-    version="v1.0.15",
+    version="v1.1.0",
     terms_of_service="https://ypw.com.do/",
     contact={
         "name": "YPW.SRL - Yolfri Páginas Web",
