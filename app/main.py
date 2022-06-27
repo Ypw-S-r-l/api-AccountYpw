@@ -8,6 +8,7 @@ from fastapi import Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from config.methods import APIversion
 
 description = """
 AccountYPW API helps you do awesome stuff. 🚀
@@ -27,10 +28,11 @@ You will be able to:
 * **Update all data user** (_implemented_).
 """
 
+
 app = FastAPI(debug=True,
     title="Account YPW",
     description=description,
-    version="v1.1.1",
+    version= APIversion(),
     terms_of_service="https://ypw.com.do/",
     contact={
         "name": "YPW.SRL - Yolfri Páginas Web",

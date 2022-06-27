@@ -1,5 +1,5 @@
 from time import *
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from typing import *
 from typing import TypedDict
 from bs4 import BeautifulSoup
@@ -13,9 +13,9 @@ def stripTarget(cadena):
 class UserUpdate(BaseModel):
     appConnect: str
     keyUser: str
-    username: Optional[str]= ""
-    name: Optional[str]= ""
-    phone: Optional[str]= ""
+    username: Optional[str]= Field(None)
+    name: Optional[str]= Field(None)
+    phone: Optional[str]= Field(None)
     
     class Config:
         arbitrary_types_allowed= True
@@ -65,6 +65,7 @@ class ChangePassw(BaseModel):
 class SetCode(BaseModel):
     email: str
     header: Optional[str]= ""
+    body: Optional[str]= ""
     support: Optional[str]= ""
     footer: Optional[str]= ""
 

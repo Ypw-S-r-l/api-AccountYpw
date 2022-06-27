@@ -1,7 +1,7 @@
 import smtplib
 from email.message import EmailMessage
 
-def enviarEmail(destino, code, header, support, footer):
+def enviarEmail(destino, code, header, body, support, footer):
 
     msg = EmailMessage()
     msg['Subject'] = 'Recuperación de contraseña - YPW.SRL'
@@ -23,13 +23,12 @@ def enviarEmail(destino, code, header, support, footer):
     </head>
     <body style="background-color:#F9F9F9; font-family: 'Poppins', sans-serif; text-align: center;">
         <div class="cuerpo" style="background-color:#FFFFFF; padding:2em;">
-            {header}
-            <h3 style="text-align: center;">Recuperación de contraseñas</h3>
-            <p style="text-align: center;">Recientemente ha solicitado restablecer la contraseña de la cuenta asociada con esta dirección de correo electrónico.</p>
+            <h1 style="text-align: center;">{header}</h1>
+            <h3 style="text-align: center;">Recovery password</h3>
+            <h1style="text-align: center;">{body}</h1>
             <h2 style="text-align: center; margin=1rem; color:#006AAB">{code}</h2>
-            <p style="text-align: center;">Introduzca este código en página de restablecimiento de contraseñas.</p>
             
-            <p style="text-align: center;">{support}</p>
+            <p style="text-align: center;">Contact: {support}</p>
             
             <h6 style="text-align: center;">{footer}</h6>
         </div>

@@ -9,6 +9,7 @@ from config.email import enviarEmail
 from datetime import datetime
 from cryptography.fernet import Fernet
 from Database.conexion import engine
+from config.methods import APIversion
 
 user = APIRouter()
 
@@ -29,7 +30,8 @@ async def root():
     return {
         "error": False,
         "message": "Bienvenid@ a APILogin YPW",
-        "res": None
+        "res": None,
+        "version": APIversion
     }
 
 
@@ -144,19 +146,22 @@ async def obtenerUsuario(user: UserObtener):
             return {
                 "error": False,
                 "message": "Usuario existente",
-                "res": response
+                "res": response,
+                "version": APIversion()
             }
         else:
             return {
                "error": False,
                 "message": "Usuario no existente",
-                "res": None
+                "res": None,
+                "version": APIversion()
             }
     else:
         return {
             "error": True,
             "message":"Existen campos vacios.",
-            "res": None
+            "res": None,
+            "version": APIversion()
         }
 
 
@@ -223,31 +228,36 @@ async def registrar(user: UserRegistro):
                         "res": {
                             "appConnect": "default",
                             "keyUser": token
-                        }
+                        },
+                        "version": APIversion()
                     }
                 else:
                     return {
                         "error": True,
                         "message": "El usuario que intenta registrar ya existe.",
-                        "res": None
+                        "res": None,
+                        "version": APIversion()
                     }
             else:
                 return {
                     "error": True,
                     "message": "Número de teléfono inválido.",
-                    "res": None
+                    "res": None,
+                    "version": APIversion()
                 }
         else:
             return {
                 "error": True,
                 "message": "Correo electrónico inválido.",
-                "res": None
+                "res": None,
+                "version": APIversion()
             }
     else:
         return {
             "error": True,
             "message": "Existen campos vacios.",
-            "res": None
+            "res": None,
+            "version": APIversion()
         }
 
 
@@ -263,13 +273,15 @@ async def login(login: UserLogin):
                 "message": "Inicio de seccion correctamente",
                 "res": {
                     "keyUser": token
-                }
+                },
+                "version": APIversion()
             }
         else:
             return {
                 "error": False,
                 "message": "Usuario no encontrado",
-                "res": None
+                "res": None,
+                "version": APIversion()
             }
     
     #CAMPO: uceCampo: username, telefono, email
@@ -349,19 +361,22 @@ async def login(login: UserLogin):
                 return {
                     "error": True,
                     "message":"No se pudo ejecutar la peticion.",
-                    "res": None
+                    "res": None,
+                    "version": APIversion()
                 }
         else:
             return {
                 "error": True,
                 "message": "Username y/o Password inválido/s",
-                "res": None
+                "res": None,
+                "version": APIversion()
             }
     else:
         return {
             "error": True,
             "message": "Existen campos vacios.",
-            "res": None
+            "res": None,
+            "version": APIversion()
         }
 
 
@@ -401,19 +416,22 @@ async def logout(user: UserLogout):
             return {
                 "error": False,
                 "message": "Seccion cerrada correctamente.",
-                "res": None
+                "res": None,
+                "version": APIversion()
             }
         else:
             return {
                "error": True,
                 "message": "La seccion no existe.",
-                "res": None
+                "res": None,
+                "version": APIversion()
             }
     else:
         return {
             "error": True,
             "message":"Existen campos vacios.",
-            "res": None
+            "res": None,
+            "version": APIversion()
         }
 
 
@@ -427,13 +445,15 @@ async def getSections(user: UserSeccion):
             return {
                 "error": False,
                 "message": "Apps conectadas a ypwLogin",
-                "res": conx
+                "res": conx,
+                "version": APIversion()
             }
         else:
             return {
                 "error": False,
                 "message": "No existen apps conectadas a este usuario.",
-                "res": None
+                "res": None,
+                "version": APIversion()
             }
     
     appConnect= user.appConnect.strip()
@@ -472,19 +492,22 @@ async def getSections(user: UserSeccion):
                 return {
                     "error": True,
                     "message":"No se pudo ejecutar la peticion.",
-                    "res": None
+                    "res": None,
+                    "version": APIversion()
                 }
         else:
             return {
                 "error": True,
                 "message": "keyUser y/o appConnect inválido/s",
-                "res": None
+                "res": None,
+                "version": APIversion()
             }
     else:
         return {
             "error": True,
             "message": "Existen campos vacios.",
-            "res": None
+            "res": None,
+            "version": APIversion()
         }
 
 
@@ -542,25 +565,29 @@ async def changePassword(user: ChangePassw):
                         "m1:": "La contraseña ha sido actualizada exitosamente.",
                         "m2:": "Todas las secciones se han eliminado."
                     },
-                    "res": None
+                    "res": None,
+                    "version": APIversion()
                 }
             else:
                 return {
                     "error": False,
                     "message": "La contraseña ha sido actualizada exitosamente.",
-                    "res": None
+                    "res": None,
+                    "version": APIversion()
                 }
         else:
             return {
                "error": True,
                 "message": "Username y/o Password inválido/s.",
-                "res": None
+                "res": None,
+                "version": APIversion()
             }
     else:
         return {
             "error": True,
             "message":"Existen campos vacios.",
-            "res": None
+            "res": None,
+            "version": APIversion()
         }
 
 #--------- ruta: ENVIO DE CODIGO A EMAIL --------
@@ -570,19 +597,21 @@ async def enviarPassCode(user: SetCode):
     #>> Elimina fallas de la libreria: BeautifulSoup
     warnings.filterwarnings("ignore", category=UserWarning, module='bs4')
     
-    #>> Verificar el envio del correo: capturando errores
-    def verEnvioEmail(email, codeTMP, header, support, footer):
-        if enviarEmail(email, codeTMP, header, support, footer) == None:
+    #>> Verificar el envio del cbodyorreo: capturando errores
+    def verEnvioEmail(email, codeTMP, header, body, support, footer):
+        if enviarEmail(email, codeTMP, header, body, support, footer) == None:
             return {
                 "error": False,
                 "message": "Correo enviado exitosamente.",
-                "res": None
+                "res": None,
+                "version": APIversion()
             }
         else:
             return {
                 "error": False,
                 "message": "Correo no se pudo enviar.",
-                "res": None
+                "res": None,
+                "version": APIversion()
             }
     
     email= user.email.strip()
@@ -591,6 +620,9 @@ async def enviarPassCode(user: SetCode):
     header= user.header.strip()
     header= BeautifulSoup(header, features='html.parser').text
     
+    body= user.body.strip()
+    body= BeautifulSoup(body, features='html.parser').text
+    
     support= user.support.strip()
     support= BeautifulSoup(support, features='html.parser').text
     
@@ -598,7 +630,7 @@ async def enviarPassCode(user: SetCode):
     footer= BeautifulSoup(footer, features='html.parser').text
     
     dataRecovery= {"email": email}
-    arrayEmail= {"header": header, "support": support, "footer": footer}
+    arrayEmail= {"header": header, "body": body, "support": support, "footer": footer}
     
     #Comprueba los campos y ejecuta las conexiones
     if verificarVacio(dataRecovery) == False: 
@@ -624,33 +656,34 @@ async def enviarPassCode(user: SetCode):
                     conn.close()
                 
                 if verificarVacio(arrayEmail) == False:
-                    return verEnvioEmail(email, codeTMP, header, support, footer)
+                    return verEnvioEmail(email, codeTMP, header, body, support, footer)
                 else:
-                    header= """
-                    <div class="cuerpo" style="background-color:#FFFFFF; padding:2em;">
-                    <img style="display: block; margin-left: auto; margin-right: auto;" src="https://realtyhs.s3.us-east-2.amazonaws.com/wp-content/uploads/2021/12/10005101/descarga.png" alt="Logo" width="189" height="189" />
-                    """
-                    support= """¿No ha realizado esta solicitud? <a href="https://ypw.com.do/#about" target="_blank" rel="noopener">Póngase en contacto con el servicio de asistencia de la empresa</a>."""
+                    header= "YPW"
+                    body= "Su codigo de recuperacion es:"
+                    support= "https://ypw.com.do/#about"
                     footer= "2022 © YPW S.R.L"
                     
-                    return verEnvioEmail(email, codeTMP, header, support, footer)
+                    return verEnvioEmail(email, codeTMP, header, body, support, footer)
             else:
                 return {
                     "error": True,
                     "message": "Correo electrónico no encontrado.",
-                    "res": None
+                    "res": None,
+                    "version": APIversion()
                 }
         else:
             return {
                 "error": True,
                 "message":"Correo electrónico inválido.",
-                "res": None
+                "res": None,
+                "version": APIversion()
             }
     else:
         return {
             "error": True,
             "message":"Existen campos vacios.",
-            "res": None
+            "res": None,
+            "version": APIversion()
         }
 
 #--------- ruta: OBTENER USUARIO --------
@@ -694,30 +727,34 @@ async def cambiarPassCode(user: RecoveryPassCode):
                 return {
                     "error": False,
                     "message":"Contraseña ha sido restablecida exitosamente.",
-                    "res": None
+                    "res": None,
+                    "version": APIversion()
                 }
             else:
                 return {
                     "error": True,
                     "message": "Correo electrónico y/o Password inválido/s",
-                    "res": None
+                    "res": None,
+                    "version": APIversion()
                 }
         else:
             return {
                 "error": True,
                 "message":"Correo electrónico inválido.",
-                "res": None
+                "res": None,
+                "version": APIversion()
             }
     else:
         return {
             "error": True,
             "message":"Existen campos vacios.",
-            "res": None
+            "res": None,
+            "version": APIversion()
         }
 
-""""
+"""
 #********* ruta: ACTUALIZAR *********
-@user.put("/api/v1/account/updateUser", status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
+@user.patch("/api/v1/account/updateUser", status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
 async def actualizarUsuario(user: UserUpdate):
     
     appConnect= user.appConnect.strip()
@@ -726,13 +763,16 @@ async def actualizarUsuario(user: UserUpdate):
     keyUser= user.keyUser.strip()
     keyUser= BeautifulSoup(keyUser, features='html.parser').text
     
-    username= user.username.strip()
+    username= user.username
+    username= str(username).strip()
     username= BeautifulSoup(username, features='html.parser').text
 
-    name= user.name.strip()
+    name= user.name
+    name= str(name).strip()
     name= BeautifulSoup(name, features='html.parser').text
     
-    phone= user.phone.strip()
+    phone= user.phone
+    phone= str(phone).strip()
     phone= BeautifulSoup(phone, features='html.parser').text
 
     #Creamos un diccionario con los valores del usuario
@@ -749,67 +789,42 @@ async def actualizarUsuario(user: UserUpdate):
             conn.close()
         
         if vlogin != None:
-            
             userID= vlogin[0]
             
-            if verificarVacio(arrayUsername) == False:
+            try:
+                with engine.connect() as conn:
+                    output= conn.execute(users.select().where(users.c.username == username)).first()
+            finally:
+                conn.close()
             
-                try:
-                    with engine.connect() as conn:
-                        output= conn.execute(users.select().where(users.c.username == username)).first()
-                finally:
-                    conn.close()
-        
-                if output == None:
-                    
-                    if verificarVacio(arrayPhone) == False:
-                        
-                        if es_telefono_valido(phone) == True:
+            if output == None:
+                if es_telefono_valido(phone) == True:
+                
+                    #Elimina los caracteres del phone
+                    phone= re.sub("\!|\'|\?|\ |\(|\)|\-|\+","", phone)
+                    arrayUser= {"username": username, "name": name, "phone": phone}
                             
-                            #Elimina los caracteres del phone
-                            phone= re.sub("\!|\'|\?|\ |\(|\)|\-|\+","", phone)
-                            arrayUser= {"username": username, "name": name, "phone": phone}
-                            
-                            try:
-                                with engine.connect() as conn:
-                                    conn.execute(users.update().values(arrayUser).where(users.c.userID == userID))
-                            finally:
-                                conn.close()
-                            
-                            return {
-                                "error": False,
-                                "message": "Datos han sido actualizados.",
-                                "res": None
-                            }
-                        else:
-                            return {
-                                "error": True,
-                                "message": "Número de teléfono inválido.",
-                                "res": None
-                            }
-                    else:
-                        arrayUser= {"username": username, "name": name}
-                        try:
-                            with engine.connect() as conn:
-                                conn.execute(users.update().values(arrayUser).where(users.c.userID == userID))
-                        finally:
+                    try:
+                        with engine.connect() as conn:
+                            conn.execute(users.update().values(username=username, name=name, phone=phone).where(users.c.userID == userID))
+                    finally:
                             conn.close()
-                        
-                        return {
-                            "error": False,
-                            "message": "Datos han sido actualizados.",
-                            "res": None
-                        }
+                    
+                    return {
+                        "error": False,
+                        "message": "Datos han sido actualizados.",
+                        "res": None
+                    }
                 else:
                     return {
                         "error": True,
-                        "message": "Nombre de usuario no disponible.",
+                        "message": "Número de teléfono inválido.",
                         "res": None
                     }
             else:
                 return {
-                    "error": False,
-                    "message": "Datos han sido actualizados.",
+                    "error": True,
+                    "message": "Nombre de usuario no disponible",
                     "res": None
                 }
         else:
@@ -827,7 +842,7 @@ async def actualizarUsuario(user: UserUpdate):
 """
 
 #********* ruta: ACTUALIZAR *********
-@user.put("/api/v1/account/updateDataUser", status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
+@user.patch("/api/v1/account/updateDataUser", status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
 async def actualizarDatos(user: UserUpdateOpcional):
 
     appConnect= user.appConnect.strip()
@@ -836,31 +851,39 @@ async def actualizarDatos(user: UserUpdateOpcional):
     keyUser= user.keyUser.strip()
     keyUser= BeautifulSoup(keyUser, features='html.parser').text
     
-    dateOfBirth= user.dateOfBirth.strip()
+    dateOfBirth= user.dateOfBirth
+    dateOfBirth= str(dateOfBirth).strip()
     dateOfBirth= BeautifulSoup(dateOfBirth, features='html.parser').text
     
-    language= user.language.strip()
+    language= user.language
+    language= str(language).strip()
     language= BeautifulSoup(language, features='html.parser').text
     
-    country= user.country.strip()
+    country= user.country
+    country= str(country).strip()
     country= BeautifulSoup(country, features='html.parser').text
     
-    ypwCashBalance= user.ypwCashBalance.strip()
+    ypwCashBalance= user.ypwCashBalance
+    ypwCashBalance= str(ypwCashBalance).strip()
     ypwCashBalance= BeautifulSoup(ypwCashBalance, features='html.parser').text
     
     shippingAddress= user.shippingAddress
     #shippingAddress= BeautifulSoup(shippingAddress, features='html.parser').text
     
-    identificationCard= user.identificationCard.strip()
+    identificationCard= user.identificationCard
+    identificationCard= str(identificationCard).strip()
     identificationCard= BeautifulSoup(identificationCard, features='html.parser').text
 
-    accountVersion= user.accountVersion.strip()
+    accountVersion= user.accountVersion
+    accountVersion= str(accountVersion).strip()
     accountVersion= BeautifulSoup(accountVersion, features='html.parser').text
 
-    timeZone= user.timeZone.strip()
+    timeZone= user.timeZone
+    timeZone= str(timeZone).strip()
     timeZone= BeautifulSoup(timeZone, features='html.parser').text
 
-    recoveryCode= user.recoveryCode.strip()
+    recoveryCode= user.recoveryCode
+    recoveryCode= str(recoveryCode).strip()
     recoveryCode= BeautifulSoup(recoveryCode, features='html.parser').text
     
     applications= user.applications
@@ -869,7 +892,8 @@ async def actualizarDatos(user: UserUpdateOpcional):
     limitations= user.limitations
     #limitations= BeautifulSoup(limitations, features='html.parser').text
     
-    accountType= user.accountType.strip()
+    accountType= user.accountType
+    accountType= str(accountType).strip()
     accountType= BeautifulSoup(accountType, features='html.parser').text
     
     tradingExits= user.tradingExits
@@ -884,19 +908,24 @@ async def actualizarDatos(user: UserUpdateOpcional):
     subscriptions= user.subscriptions
     #subscriptions= BeautifulSoup(subscriptions, features='html.parser').text
     
-    metodoPago= user.metodoPago.strip()
+    metodoPago= user.metodoPago
+    metodoPago= str(metodoPago).strip()
     metodoPago= BeautifulSoup(metodoPago, features='html.parser').text
     
-    servidorDB= user.servidorDB.strip()
+    servidorDB= user.servidorDB
+    servidorDB= str(servidorDB).strip()
     servidorDB= BeautifulSoup(servidorDB, features='html.parser').text
     
-    userDB= user.userDB.strip()
+    userDB= user.userDB
+    userDB= str(userDB).strip()
     userDB= BeautifulSoup(userDB, features='html.parser').text
     
-    puertoDB= user.puertoDB.strip()
+    puertoDB= user.puertoDB
+    puertoDB= str(puertoDB).strip()
     puertoDB= BeautifulSoup(puertoDB, features='html.parser').text
     
-    pagWeb= user.pagWeb.strip()
+    pagWeb= user.pagWeb
+    pagWeb= str(pagWeb).strip()
     pagWeb= BeautifulSoup(pagWeb, features='html.parser').text
     
     data= user.data
@@ -929,24 +958,27 @@ async def actualizarDatos(user: UserUpdateOpcional):
             
             try:
                 with engine.connect() as conn:
-                    conn.execute(users.update().values(update).where(users.c.userID == userID))
+                    conn.execute(users.update().values(dateOfBirth=dateOfBirth, language=language, country=country, ypwCashBalance=ypwCashBalance, shippingAddress=shippingAddress, identificationCard=identificationCard, accountVersion=accountVersion, timeZone=timeZone, recoveryCode=recoveryCode, applications=applications, limitations=limitations, accountType=accountType, tradingExits=tradingExits, pendingInvoices=pendingInvoices, bills=bills, subscriptions=subscriptions, metodoPago=metodoPago, servidorDB=servidorDB, userDB=userDB, puertoDB=puertoDB, pagWeb=pagWeb, data=data).where(users.c.userID == userID))
             finally:
                 conn.close()
             
             return {
                 "error": False,
                 "message": "Datos actualizados exitosamente.",
-                "res": update
+                "res": update,
+                "version": APIversion()
             }
         else:
             return {
                 "error": True,
                 "message": "No se encontró la seccion.",
-                "res": None
+                "res": None,
+                "version": APIversion()
             }
     else:
         return {
             "error": True,
             "message":"Existen campos vacios.",
-            "res": None
+            "res": None,
+            "version": APIversion()
         }
