@@ -1,7 +1,5 @@
-from datetime import datetime
-from lib2to3.pytree import Base
 from time import *
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 from typing import *
 from typing import TypedDict
 from bs4 import BeautifulSoup
@@ -13,14 +11,14 @@ def stripTarget(cadena):
 
 #***** MODELO CLIENTE: actualizar datos principales *****
 class UserUpdate(BaseModel):
+    appConnect: str
+    keyUser: str
     username: Optional[str]= ""
-    password: Optional[str]= ""
     name: Optional[str]= ""
-    email: Optional[str]= ""
     phone: Optional[str]= ""
     
     class Config:
-        arbitrary_types_allowed = True
+        arbitrary_types_allowed= True
 
 
 #***** REGISTRO ***** modelo

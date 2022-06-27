@@ -30,7 +30,7 @@ You will be able to:
 app = FastAPI(debug=True,
     title="Account YPW",
     description=description,
-    version="v1.1.0",
+    version="v1.1.1",
     terms_of_service="https://ypw.com.do/",
     contact={
         "name": "YPW.SRL - Yolfri Páginas Web",

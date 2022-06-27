@@ -626,8 +626,11 @@ async def enviarPassCode(user: SetCode):
                 if verificarVacio(arrayEmail) == False:
                     return verEnvioEmail(email, codeTMP, header, support, footer)
                 else:
-                    header= "https://realtyhs.s3.us-east-2.amazonaws.com/wp-content/uploads/2021/12/10005101/descarga.png"
-                    support= "https://ypw.com.do/#about"
+                    header= """
+                    <div class="cuerpo" style="background-color:#FFFFFF; padding:2em;">
+                    <img style="display: block; margin-left: auto; margin-right: auto;" src="https://realtyhs.s3.us-east-2.amazonaws.com/wp-content/uploads/2021/12/10005101/descarga.png" alt="Logo" width="189" height="189" />
+                    """
+                    support= """¿No ha realizado esta solicitud? <a href="https://ypw.com.do/#about" target="_blank" rel="noopener">Póngase en contacto con el servicio de asistencia de la empresa</a>."""
                     footer= "2022 © YPW S.R.L"
                     
                     return verEnvioEmail(email, codeTMP, header, support, footer)
@@ -712,11 +715,121 @@ async def cambiarPassCode(user: RecoveryPassCode):
             "res": None
         }
 
+""""
+#********* ruta: ACTUALIZAR *********
+@user.put("/api/v1/account/updateUser", status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
+async def actualizarUsuario(user: UserUpdate):
+    
+    appConnect= user.appConnect.strip()
+    appConnect= BeautifulSoup(appConnect, features='html.parser').text
+
+    keyUser= user.keyUser.strip()
+    keyUser= BeautifulSoup(keyUser, features='html.parser').text
+    
+    username= user.username.strip()
+    username= BeautifulSoup(username, features='html.parser').text
+
+    name= user.name.strip()
+    name= BeautifulSoup(name, features='html.parser').text
+    
+    phone= user.phone.strip()
+    phone= BeautifulSoup(phone, features='html.parser').text
+
+    #Creamos un diccionario con los valores del usuario
+    array= {"keyUser": keyUser, "appConnect": appConnect}
+    arrayUsername= {"username": username}
+    arrayPhone= {"phone": phone}
+    
+    if verificarVacio(array) == False:
+        #Consultamos a la base de datos para obtener el userID del usuario 
+        try:
+            with engine.connect() as conn:
+                vlogin= conn.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+        finally:
+            conn.close()
+        
+        if vlogin != None:
+            
+            userID= vlogin[0]
+            
+            if verificarVacio(arrayUsername) == False:
+            
+                try:
+                    with engine.connect() as conn:
+                        output= conn.execute(users.select().where(users.c.username == username)).first()
+                finally:
+                    conn.close()
+        
+                if output == None:
+                    
+                    if verificarVacio(arrayPhone) == False:
+                        
+                        if es_telefono_valido(phone) == True:
+                            
+                            #Elimina los caracteres del phone
+                            phone= re.sub("\!|\'|\?|\ |\(|\)|\-|\+","", phone)
+                            arrayUser= {"username": username, "name": name, "phone": phone}
+                            
+                            try:
+                                with engine.connect() as conn:
+                                    conn.execute(users.update().values(arrayUser).where(users.c.userID == userID))
+                            finally:
+                                conn.close()
+                            
+                            return {
+                                "error": False,
+                                "message": "Datos han sido actualizados.",
+                                "res": None
+                            }
+                        else:
+                            return {
+                                "error": True,
+                                "message": "Número de teléfono inválido.",
+                                "res": None
+                            }
+                    else:
+                        arrayUser= {"username": username, "name": name}
+                        try:
+                            with engine.connect() as conn:
+                                conn.execute(users.update().values(arrayUser).where(users.c.userID == userID))
+                        finally:
+                            conn.close()
+                        
+                        return {
+                            "error": False,
+                            "message": "Datos han sido actualizados.",
+                            "res": None
+                        }
+                else:
+                    return {
+                        "error": True,
+                        "message": "Nombre de usuario no disponible.",
+                        "res": None
+                    }
+            else:
+                return {
+                    "error": False,
+                    "message": "Datos han sido actualizados.",
+                    "res": None
+                }
+        else:
+            return {
+                "error": True,
+                "message": "No se encontró la seccion.",
+                "res": None
+            }
+    else:
+        return {
+            "error": True,
+            "message":"Campos obligatorios vacios.",
+            "res": None
+        }
+"""
 
 #********* ruta: ACTUALIZAR *********
 @user.put("/api/v1/account/updateDataUser", status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
 async def actualizarDatos(user: UserUpdateOpcional):
-    
+
     appConnect= user.appConnect.strip()
     appConnect= BeautifulSoup(appConnect, features='html.parser').text
 
@@ -813,7 +926,6 @@ async def actualizarDatos(user: UserUpdateOpcional):
         if vlogin != None:
             
             userID= vlogin[0]
-            print(userID)
             
             try:
                 with engine.connect() as conn:

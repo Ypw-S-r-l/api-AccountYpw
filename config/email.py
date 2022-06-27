@@ -23,13 +23,13 @@ def enviarEmail(destino, code, header, support, footer):
     </head>
     <body style="background-color:#F9F9F9; font-family: 'Poppins', sans-serif; text-align: center;">
         <div class="cuerpo" style="background-color:#FFFFFF; padding:2em;">
-            <img style="display: block; margin-left: auto; margin-right: auto;" src="{header}" alt="Logo" width="189" height="189" />
+            {header}
             <h3 style="text-align: center;">Recuperación de contraseñas</h3>
             <p style="text-align: center;">Recientemente ha solicitado restablecer la contraseña de la cuenta asociada con esta dirección de correo electrónico.</p>
             <h2 style="text-align: center; margin=1rem; color:#006AAB">{code}</h2>
             <p style="text-align: center;">Introduzca este código en página de restablecimiento de contraseñas.</p>
             
-            <p style="text-align: center;">¿No ha realizado esta solicitud? <a href="{support}" target="_blank" rel="noopener">Póngase en contacto con el servicio de asistencia de la empresa</a>.</p>
+            <p style="text-align: center;">{support}</p>
             
             <h6 style="text-align: center;">{footer}</h6>
         </div>
