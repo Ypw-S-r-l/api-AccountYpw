@@ -80,26 +80,15 @@ class RecoveryPassCode(BaseModel):
 class UserUpdateOpcional(BaseModel):
     appConnect: str
     keyUser: str
+    name: Optional[str]= ""
     dateOfBirth: Optional[str]= ""
     language: Optional[str]= ""
     country: Optional[str]= ""
-    ypwCashBalance: Optional[str]= ""
     shippingAddress: Optional[dict] #JSON
     identificationCard: Optional[str]= ""
     accountVersion: Optional[str]= ""
     timeZone: Optional[str]= ""
-    recoveryCode: Optional[str]= ""
-    applications: Optional[dict] #JSON
-    limitations: Optional[dict]  #JSON
     accountType: Optional[str]= ""
-    tradingExits: Optional[dict] #JSON
-    pendingInvoices: Optional[dict]  #JSON
-    bills: Optional[dict]  #JSON
-    subscriptions: Optional[dict]  #JSON
-    metodoPago: Optional[str]= ""
-    servidorDB: Optional[str]= ""
-    userDB: Optional[str]= ""
-    puertoDB: Optional[str]= ""
     pagWeb: Optional[str]= ""
     data: Optional[dict]  #JSON
 

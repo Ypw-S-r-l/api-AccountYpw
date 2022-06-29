@@ -44,9 +44,10 @@ app = FastAPI(debug=True,
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     return JSONResponse({
-        "error": True,
-        "message": "Ruta invalida.",
-        "res": None,
+            "error": True,
+            "message": "Ruta invalida.",
+            "res": None,
+            "version": APIversion()
         }
     )
 
@@ -55,7 +56,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=jsonable_encoder({"error": True, "message": "Inexistencia de campos.", "res": None}),
+        content=jsonable_encoder({"error": True, "message": "Inexistencia de campos.", "res": None, "version": APIversion()}),
     )
 
 #Solucion CORS

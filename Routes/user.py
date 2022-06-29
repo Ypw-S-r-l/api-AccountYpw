@@ -31,7 +31,7 @@ async def root():
         "error": False,
         "message": "Bienvenid@ a APILogin YPW",
         "res": None,
-        "version": APIversion
+        "version": APIversion()
     }
 
 
@@ -842,7 +842,7 @@ async def actualizarUsuario(user: UserUpdate):
 """
 
 #********* ruta: ACTUALIZAR *********
-@user.patch("/api/v1/account/updateDataUser", status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
+@user.put("/api/v1/account/updateDataUser", status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
 async def actualizarDatos(user: UserUpdateOpcional):
 
     appConnect= user.appConnect.strip()
@@ -850,6 +850,9 @@ async def actualizarDatos(user: UserUpdateOpcional):
 
     keyUser= user.keyUser.strip()
     keyUser= BeautifulSoup(keyUser, features='html.parser').text
+    
+    name= user.name.strip()
+    name= BeautifulSoup(name, features='html.parser').text
     
     dateOfBirth= user.dateOfBirth
     dateOfBirth= str(dateOfBirth).strip()
@@ -863,11 +866,8 @@ async def actualizarDatos(user: UserUpdateOpcional):
     country= str(country).strip()
     country= BeautifulSoup(country, features='html.parser').text
     
-    ypwCashBalance= user.ypwCashBalance
-    ypwCashBalance= str(ypwCashBalance).strip()
-    ypwCashBalance= BeautifulSoup(ypwCashBalance, features='html.parser').text
-    
     shippingAddress= user.shippingAddress
+    #shippingAddress= str(shippingAddress).strip()
     #shippingAddress= BeautifulSoup(shippingAddress, features='html.parser').text
     
     identificationCard= user.identificationCard
@@ -881,66 +881,18 @@ async def actualizarDatos(user: UserUpdateOpcional):
     timeZone= user.timeZone
     timeZone= str(timeZone).strip()
     timeZone= BeautifulSoup(timeZone, features='html.parser').text
-
-    recoveryCode= user.recoveryCode
-    recoveryCode= str(recoveryCode).strip()
-    recoveryCode= BeautifulSoup(recoveryCode, features='html.parser').text
-    
-    applications= user.applications
-    #applications= BeautifulSoup(applications, features='html.parser').text
-    
-    limitations= user.limitations
-    #limitations= BeautifulSoup(limitations, features='html.parser').text
     
     accountType= user.accountType
     accountType= str(accountType).strip()
     accountType= BeautifulSoup(accountType, features='html.parser').text
-    
-    tradingExits= user.tradingExits
-    #tradingExits= BeautifulSoup(tradingExits, features='html.parser').text
-    
-    pendingInvoices= user.pendingInvoices
-    #pendingInvoices= BeautifulSoup(pendingInvoices, features='html.parser').text
-    
-    bills= user.bills
-    #bills= BeautifulSoup(bills, features='html.parser').text
-    
-    subscriptions= user.subscriptions
-    #subscriptions= BeautifulSoup(subscriptions, features='html.parser').text
-    
-    metodoPago= user.metodoPago
-    metodoPago= str(metodoPago).strip()
-    metodoPago= BeautifulSoup(metodoPago, features='html.parser').text
-    
-    servidorDB= user.servidorDB
-    servidorDB= str(servidorDB).strip()
-    servidorDB= BeautifulSoup(servidorDB, features='html.parser').text
-    
-    userDB= user.userDB
-    userDB= str(userDB).strip()
-    userDB= BeautifulSoup(userDB, features='html.parser').text
-    
-    puertoDB= user.puertoDB
-    puertoDB= str(puertoDB).strip()
-    puertoDB= BeautifulSoup(puertoDB, features='html.parser').text
     
     pagWeb= user.pagWeb
     pagWeb= str(pagWeb).strip()
     pagWeb= BeautifulSoup(pagWeb, features='html.parser').text
     
     data= user.data
+    #data= str(data).strip()
     #data= BeautifulSoup(data, features='html.parser').text
-    
-    update= {"dateOfBirth": dateOfBirth, "language": language, 
-    "country": country, "ypwCashBalance": ypwCashBalance, 
-    "shippingAddress": shippingAddress, "identificationCard": identificationCard, 
-    "accountVersion": accountVersion, "timeZone": timeZone, 
-    "recoveryCode": recoveryCode, "applications": applications, 
-    "limitations": limitations, "accountType": accountType, 
-    "tradingExits": tradingExits, "pendingInvoices": pendingInvoices, 
-    "bills": bills, "subscriptions": subscriptions, 
-    "metodoPago": metodoPago, "servidorDB": servidorDB, 
-    "userDB": userDB, "puertoDB": puertoDB, "pagWeb": pagWeb, "data": data}
     
     array= {"keyUser": keyUser, "appConnect": appConnect}
     
@@ -958,14 +910,14 @@ async def actualizarDatos(user: UserUpdateOpcional):
             
             try:
                 with engine.connect() as conn:
-                    conn.execute(users.update().values(dateOfBirth=dateOfBirth, language=language, country=country, ypwCashBalance=ypwCashBalance, shippingAddress=shippingAddress, identificationCard=identificationCard, accountVersion=accountVersion, timeZone=timeZone, recoveryCode=recoveryCode, applications=applications, limitations=limitations, accountType=accountType, tradingExits=tradingExits, pendingInvoices=pendingInvoices, bills=bills, subscriptions=subscriptions, metodoPago=metodoPago, servidorDB=servidorDB, userDB=userDB, puertoDB=puertoDB, pagWeb=pagWeb, data=data).where(users.c.userID == userID))
+                    conn.execute(users.update().values(name=name, dateOfBirth=dateOfBirth, language=language, country=country, shippingAddress=shippingAddress, identificationCard=identificationCard, accountVersion=accountVersion, timeZone=timeZone, accountType=accountType, pagWeb=pagWeb, data=data).where(users.c.userID == userID))
             finally:
                 conn.close()
             
             return {
                 "error": False,
                 "message": "Datos actualizados exitosamente.",
-                "res": update,
+                "res": None,
                 "version": APIversion()
             }
         else:
