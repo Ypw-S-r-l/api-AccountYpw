@@ -958,11 +958,9 @@ async def actualizarCampoData(user: UpdateFieldData):
             conn.close()
         
         if vlogin != None:
-            
             userID= vlogin[0]
             
             if data:
-            
                 try:
                     with engine.connect() as conn:
                         conn.execute(users.update().values(data=data).where(users.c.userID == userID))
