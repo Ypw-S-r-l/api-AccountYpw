@@ -971,7 +971,7 @@ async def actualizarCampoData(user: UpdateFieldData):
                 }
             else:
                 return {
-                    "error": False,
+                    "error": True,
                     "message": "No se enviaron datos para actualizar.",
                     "res": None,
                     "version": APIversion()
