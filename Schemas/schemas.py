@@ -72,7 +72,7 @@ class SetCode(BaseModel):
 #***** RECUPERAR PASSWORD POR CODIGO ****** modelo
 class RecoveryPassCode(BaseModel):
     email: str
-    codetmp: str
+    codetmpEmail: str
     newPassword: str
 
 

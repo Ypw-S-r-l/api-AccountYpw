@@ -591,8 +591,8 @@ async def changePassword(user: ChangePassw):
         }
 
 #--------- ruta: ENVIO DE CODIGO A EMAIL --------
-@user.post('/api/v1/account/setCode', status_code=200, tags=['Usuario'])
-async def enviarPassCode(user: SetCode):
+@user.post('/api/v1/account/setCode/email', status_code=200, tags=['Usuario'])
+async def enviarPassCodeEmail(user: SetCode):
     
     #>> Elimina fallas de la libreria: BeautifulSoup
     warnings.filterwarnings("ignore", category=UserWarning, module='bs4')
@@ -687,13 +687,13 @@ async def enviarPassCode(user: SetCode):
         }
 
 #--------- ruta: OBTENER USUARIO --------
-@user.post('/api/v1/account/changePasswCode', status_code=200, tags=['Usuario'])
-async def cambiarPassCode(user: RecoveryPassCode):
+@user.post('/api/v1/account/changePasswCode/email', status_code=200, tags=['Usuario'])
+async def cambiarPassCodeEmail(user: RecoveryPassCode):
     
     email= user.email.strip()
     email= BeautifulSoup(email, features='html.parser').text
     
-    codetmp= user.codetmp.strip()
+    codetmp= user.codetmpEmail.strip()
     codetmp= BeautifulSoup(codetmp, features='html.parser').text
     
     newPassword= user.newPassword.strip()
@@ -942,6 +942,8 @@ async def actualizarCampoData(user: UpdateFieldData):
     keyUser= BeautifulSoup(keyUser, features='html.parser').text
     
     data= user.data
+    data= str(data).strip()
+    data= BeautifulSoup(data, features='html.parser').text
     
     array= {"keyUser": keyUser, "appConnect": appConnect}
     
