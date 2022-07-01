@@ -942,8 +942,8 @@ async def actualizarCampoData(user: UpdateFieldData):
     keyUser= BeautifulSoup(keyUser, features='html.parser').text
     
     data= user.data
-    data= str(data).strip()
-    data= BeautifulSoup(data, features='html.parser').text
+    #data= str(data).strip()
+    #data= BeautifulSoup(data, features='html.parser').text
     
     array= {"keyUser": keyUser, "appConnect": appConnect}
     
