@@ -4,7 +4,7 @@ from fastapi import APIRouter, Response
 from bs4 import BeautifulSoup
 from sqlalchemy import text
 from Models.index import users, keys
-from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserUpdate, UserUpdateOpcional, UserLogout, UserSeccion, ChangePassw, SetCode, RecoveryPassCode
+from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserUpdate, UserUpdateOpcional, UserLogout, UserSeccion, ChangePassw, SetCode, RecoveryPassCode, UpdateFieldData
 from config.email import enviarEmail
 from datetime import datetime
 from cryptography.fernet import Fernet
@@ -920,6 +920,68 @@ async def actualizarDatos(user: UserUpdateOpcional):
                 "res": None,
                 "version": APIversion()
             }
+        else:
+            return {
+                "error": True,
+                "message": "No se encontró la seccion.",
+                "res": None,
+                "version": APIversion()
+            }
+    else:
+        return {
+            "error": True,
+            "message":"Existen campos vacios.",
+            "res": None,
+            "version": APIversion()
+        }
+
+#********* ruta: ACTUALIZAR *********
+@user.put("/api/v1/account/updateFieldData", status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
+async def actualizarCampoData(user: UpdateFieldData):
+    
+    appConnect= user.appConnect.strip()
+    appConnect= BeautifulSoup(appConnect, features='html.parser').text
+
+    keyUser= user.keyUser.strip()
+    keyUser= BeautifulSoup(keyUser, features='html.parser').text
+    
+    data= user.data
+    
+    array= {"keyUser": keyUser, "appConnect": appConnect}
+    
+    if verificarVacio(array) == False:
+        #Consultamos a la base de datos para obtener el userID del usuario 
+        try:
+            with engine.connect() as conn:
+                vlogin= conn.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+        finally:
+            conn.close()
+        
+        if vlogin != None:
+            
+            userID= vlogin[0]
+            
+            if data:
+            
+                try:
+                    with engine.connect() as conn:
+                        conn.execute(users.update().values(data=data).where(users.c.userID == userID))
+                finally:
+                    conn.close()
+                
+                return {
+                    "error": False,
+                    "message": "Datos actualizados exitosamente.",
+                    "res": None,
+                    "version": APIversion()
+                }
+            else:
+                return {
+                    "error": False,
+                    "message": "No se enviaron datos para actualizar.",
+                    "res": None,
+                    "version": APIversion()
+                }
         else:
             return {
                 "error": True,

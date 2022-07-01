@@ -94,3 +94,9 @@ class UserUpdateOpcional(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
+
+class UpdateFieldData(BaseModel):
+    appConnect: str
+    keyUser: str
+    data: dict #JSON
