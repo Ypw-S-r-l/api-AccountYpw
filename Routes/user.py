@@ -693,7 +693,7 @@ async def cambiarPassCodeEmail(user: RecoveryPassCode):
     email= user.email.strip()
     email= BeautifulSoup(email, features='html.parser').text
     
-    codetmp= user.codetmpEmail.strip()
+    codetmp= user.codetmp.strip()
     codetmp= BeautifulSoup(codetmp, features='html.parser').text
     
     newPassword= user.newPassword.strip()
