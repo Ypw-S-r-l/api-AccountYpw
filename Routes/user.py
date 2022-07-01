@@ -890,10 +890,6 @@ async def actualizarDatos(user: UserUpdateOpcional):
     pagWeb= str(pagWeb).strip()
     pagWeb= BeautifulSoup(pagWeb, features='html.parser').text
     
-    data= user.data
-    #data= str(data).strip()
-    #data= BeautifulSoup(data, features='html.parser').text
-    
     array= {"keyUser": keyUser, "appConnect": appConnect}
     
     if verificarVacio(array) == False:
@@ -910,7 +906,7 @@ async def actualizarDatos(user: UserUpdateOpcional):
             
             try:
                 with engine.connect() as conn:
-                    conn.execute(users.update().values(name=name, dateOfBirth=dateOfBirth, language=language, country=country, shippingAddress=shippingAddress, identificationCard=identificationCard, accountVersion=accountVersion, timeZone=timeZone, accountType=accountType, pagWeb=pagWeb, data=data).where(users.c.userID == userID))
+                    conn.execute(users.update().values(name=name, dateOfBirth=dateOfBirth, language=language, country=country, shippingAddress=shippingAddress, identificationCard=identificationCard, accountVersion=accountVersion, timeZone=timeZone, accountType=accountType, pagWeb=pagWeb).where(users.c.userID == userID))
             finally:
                 conn.close()
             

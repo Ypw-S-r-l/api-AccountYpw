@@ -90,7 +90,6 @@ class UserUpdateOpcional(BaseModel):
     timeZone: Optional[str]= ""
     accountType: Optional[str]= ""
     pagWeb: Optional[str]= ""
-    data: Optional[dict]  #JSON
 
     class Config:
         arbitrary_types_allowed = True
