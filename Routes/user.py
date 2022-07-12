@@ -151,7 +151,7 @@ async def obtenerUsuario(user: UserObtener):
             }
         else:
             return {
-               "error": False,
+                "error": True,
                 "message": "Usuario no existente",
                 "res": None,
                 "version": APIversion()
