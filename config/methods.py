@@ -1,3 +1,3 @@
 def APIversion():
-    verApi= "v1.2.1"
+    verApi= "v1.2.2"
     return verApi

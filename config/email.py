@@ -4,7 +4,7 @@ from email.message import EmailMessage
 def enviarEmail(destino, code, header, body, support, footer):
 
     msg = EmailMessage()
-    msg['Subject'] = 'Recuperación de contraseña - YPW.SRL'
+    msg['Subject'] = 'Recuperación de contraseña'
     msg['From'] = "app@ypw.com.do"
     msg['To'] = destino
 
@@ -28,7 +28,7 @@ def enviarEmail(destino, code, header, body, support, footer):
             <h1style="text-align: center;">{body}</h1>
             <h2 style="text-align: center; margin=1rem; color:#006AAB">{code}</h2>
             
-            <p style="text-align: center;">Contact: {support}</p>
+            <p style="text-align: center;">{support}</p>
             
             <h6 style="text-align: center;">{footer}</h6>
         </div>
