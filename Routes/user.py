@@ -70,7 +70,7 @@ def encrytPassw(passw):
 
 #VALIDANDO EMAIL: expresiones regulares
 def es_correo_valido(correo):
-    expresion_regular = r"(?:[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])"
+    expresion_regular= r"^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
     return re.match(expresion_regular, correo) is not None
 
 #VALIDANDO PHONE: expresiones regulares
@@ -78,7 +78,11 @@ def es_telefono_valido(phone):
     expresion_regular = r"^[+]?(\d{1,4})?\s?-?[.]?[(]?\d{3}[)]?\s?-?[.]?\d{3}\s?-?[.]?\d{4}$"
     return re.match(expresion_regular, phone) is not None
 
-
+#VALIDANDO USERNAME: expresiones regulares
+def es_usuario_valido(username):
+    expresion_regular= r"^[a-zA-Z0-9]+[._a-zA-Z0-9@]{5,34}$"
+    return re.match(expresion_regular, username) is not None
+    
 #Generador de token/keyUser.
 def generarToken():
     payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
@@ -189,66 +193,75 @@ async def registrar(user: UserRegistro):
 
     #Creamos un diccionario con los valores del usuario
     newUser = {"username": username, "password": passw, "email": email, "name": name, "phone": phone}
-
+    
     if verificarVacio(newUser) == False:
-        #Empezamos a procesar el correo electronico
-        if es_correo_valido(email) == True:
-            #Empezamos a procesar el numero de telefono
-            if es_telefono_valido(phone) == True:
-                
-                #Elimina los caracteres del phone
-                phone= re.sub("\!|\'|\?|\ |\(|\)|\-|\+","", phone)
-                
-                try:
-                    #Usamos el procedimiento almacenado para registrar el usuario y el token generado.
-                    with engine.connect() as conn:
-                        cursor= conn.connection.cursor()
-                        arg= (username, passw, email, name, phone, 0)
-                        cursor.callproc('registerUser', args=arg)
-                        conn.connection.commit()
-                        output= cursor.fetchone()
-                        output= output[0]
-                finally:
-                    conn.close()
-                
-                if output == 1:
+        #Empezamos a procesar el username
+        if es_usuario_valido(username) == True:
+            #Empezamos a procesar el correo electronico
+            if es_correo_valido(email) == True:
+                #Empezamos a procesar el numero de telefono
+                if es_telefono_valido(phone) == True:
                     
-                    token= generarToken()
-                    login= autoLogin(email, passw)
+                    #Elimina los caracteres del phone
+                    phone= re.sub("\!|\'|\?|\ |\(|\)|\-|\+","", phone)
                     
                     try:
+                        #Usamos el procedimiento almacenado para registrar el usuario y el token generado.
                         with engine.connect() as conn:
-                            conn.execute(keys.insert().values(keyUser= token, appConnect="default", userID=login))
+                            cursor= conn.connection.cursor()
+                            arg= (username, passw, email, name, phone, 0)
+                            cursor.callproc('registerUser', args=arg)
+                            conn.connection.commit()
+                            output= cursor.fetchone()
+                            output= output[0]
                     finally:
                         conn.close()
                     
-                    return {
-                        "error": False,
-                        "message": "Usuario agregado correctamente.",
-                        "res": {
-                            "appConnect": "default",
-                            "keyUser": token
-                        },
-                        "version": APIversion()
-                    }
+                    if output == 1:
+                        
+                        token= generarToken()
+                        login= autoLogin(email, passw)
+                        
+                        try:
+                            with engine.connect() as conn:
+                                conn.execute(keys.insert().values(keyUser= token, appConnect="default", userID=login))
+                        finally:
+                            conn.close()
+                        
+                        return {
+                            "error": False,
+                            "message": "Usuario agregado correctamente.",
+                            "res": {
+                                "appConnect": "default",
+                                "keyUser": token
+                            },
+                            "version": APIversion()
+                        }
+                    else:
+                        return {
+                            "error": True,
+                            "message": "El usuario que intenta registrar ya existe.",
+                            "res": None,
+                            "version": APIversion()
+                        }
                 else:
                     return {
                         "error": True,
-                        "message": "El usuario que intenta registrar ya existe.",
+                        "message": "Número de teléfono inválido.",
                         "res": None,
                         "version": APIversion()
                     }
             else:
                 return {
                     "error": True,
-                    "message": "Número de teléfono inválido.",
+                    "message": "Correo electrónico inválido.",
                     "res": None,
                     "version": APIversion()
                 }
         else:
             return {
                 "error": True,
-                "message": "Correo electrónico inválido.",
+                "message": "Nombre de usuario inválido.",
                 "res": None,
                 "version": APIversion()
             }
@@ -327,7 +340,7 @@ async def login(login: UserLogin):
                     output= cursor.fetchone()
             finally:
                 conn.close()
-        else:
+        elif es_usuario_valido(username) == True:
             try:
                 #Usando procedimiento almacenado: loginUser
                 with engine.connect() as conn:
@@ -338,7 +351,13 @@ async def login(login: UserLogin):
                     output= cursor.fetchone()
             finally:
                 conn.close()
-
+        else:
+            return {
+                "error": True,
+                "message":"No se pudo completar la operación porque hubo un error en la validación.",
+                "res": None,
+                "version": APIversion()
+            }
 
         if output != None:
             #Almacenamos el userID del usuario en 'userIDK'
