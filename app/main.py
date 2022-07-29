@@ -29,11 +29,12 @@ You will be able to:
 * **Update all data user** (_implemented_).
 """
 
+version= APIversion()
 
 app = FastAPI(debug=True,
     title="Account YPW",
     description=description,
-    version= APIversion(),
+    version= version[1],
     terms_of_service="https://ypw.com.do/",
     contact={
         "name": "YPW.SRL - Yolfri Páginas Web",
@@ -63,7 +64,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
             "error": True,
             "message": "Ruta invalida.",
             "res": None,
-            "version": APIversion()
+            "version": version[1]
         })
     )
 
@@ -76,7 +77,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "error": True,
             "message": "Inexistencia de campos.",
             "res": None,
-            "version": APIversion()
+            "version": version[1]
         })
     )
 

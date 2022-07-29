@@ -1,11 +1,12 @@
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 
-#Metodo de control de versiones 
+#Metodos de control de versiones
 def APIversion():
-    verApi= "v1.3.0"
+    verApi= ("v1", "v1.3.1")
     return verApi
 
+version= APIversion()
 
 #Metodo para enviar respuesta 200 ~
 def responseModelError2X(status_code, error: bool, message, res):
@@ -15,7 +16,7 @@ def responseModelError2X(status_code, error: bool, message, res):
             "error": error,
             "message": message,
             "res": res,
-            "version": APIversion()
+            "version": version[1]
         }),
     )
 
@@ -27,6 +28,6 @@ def responseModelError4X(status_code, error: bool, message, res):
             "error": error,
             "message": message,
             "res": res,
-            "version": APIversion()
+            "version": version[1]
         }),
     )
