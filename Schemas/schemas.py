@@ -23,11 +23,11 @@ class UserUpdate(BaseModel):
 
 #***** REGISTRO ***** modelo
 class UserRegistro(BaseModel):
-    username: str
-    password: str
-    name: str
-    email: str
-    phone: str
+    username: str= Field(min_length=6, max_length=35)
+    password: str= Field(min_length=8, max_length=201)
+    name: str= Field(min_length=2, max_length=35)
+    email: str= Field(max_length=65)
+    phone: str= Field(max_length=20)
 
 
 #***** LOGIN ****** modelo

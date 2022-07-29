@@ -1,5 +1,5 @@
-from sqlalchemy import DATETIME, JSON, TEXT, VARCHAR, Table, Column
-from sqlalchemy.sql.sqltypes import Integer, String, TIMESTAMP, DateTime
+from sqlalchemy import JSON, Table, Column
+from sqlalchemy.sql.sqltypes import Integer, String, TIMESTAMP
 from Database.conexion import meta, engine
 
 #------- Creacion de la tabla 'users' y 'keys'

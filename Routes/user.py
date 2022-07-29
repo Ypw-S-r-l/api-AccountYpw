@@ -1,6 +1,6 @@
 import re, secrets, bcrypt, base64, hashlib, random, warnings
 from starlette.status import *
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, status
 from bs4 import BeautifulSoup
 from sqlalchemy import text
 from Models.index import users, keys
@@ -9,30 +9,16 @@ from config.email import enviarEmail
 from datetime import datetime
 from cryptography.fernet import Fernet
 from Database.conexion import engine
-from config.methods import APIversion
+from config.methods import responseModelError2X, responseModelError4X
+
 
 user = APIRouter()
-
-
-#-------- Eventos para validar conexion a DB () --------
-@user.on_event("startup")
-async def startup():
-    print("Application startup")
-
-@user.on_event("shutdown")
-async def shutdown():
-    print("Application shutdown")
 
 
 #--------- ruta: root ---------
 @user.get('/', tags=["Welcome"])
 async def root():
-    return {
-        "error": False,
-        "message": "Bienvenid@ a APILogin YPW",
-        "res": None,
-        "version": APIversion()
-    }
+    return responseModelError2X(status.HTTP_200_OK, False, "Bienvenid@ a APILogin YPW", None)
 
 
 #Y comprobamos si los inputs estan vacios
@@ -83,6 +69,11 @@ def es_usuario_valido(username):
     expresion_regular= r"^[a-zA-Z0-9@]+[._a-zA-Z0-9@]{5,34}$"
     return re.match(expresion_regular, username) is not None
 
+#VALIDANDO PASSWORD: expresiones regulares
+def es_password_valido(password):
+    expresion_regular= r"^\S(.|\s){7,200}$"
+    return re.match(expresion_regular, password) is not None
+
 #Generador de token/keyUser.
 def generarToken():
     payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
@@ -90,6 +81,7 @@ def generarToken():
     token= f.encrypt(key.encode("utf-8"))
     return token
 
+#Generador de codigo de 6 digitos.
 def generarCode():
     codetmp= random.randint(100000, 999999)
     return codetmp
@@ -112,7 +104,7 @@ def autoLogin(email, passw):
 
 
 #--------- ruta: OBTENER USUARIO --------
-@user.post('/api/v1/account/getUser', status_code=200, tags=['Usuario'])
+@user.post('/api/v1/account/getUser', status_code=200, response_model=UserObtener, tags=['Usuario'])
 async def obtenerUsuario(user: UserObtener):
     
     appConnect= user.appConnect.strip()
@@ -147,30 +139,15 @@ async def obtenerUsuario(user: UserObtener):
             finally:
                 conn.close()
             
-            return {
-                "error": False,
-                "message": "Usuario existente",
-                "res": response,
-                "version": APIversion()
-            }
+            return responseModelError2X(status.HTTP_200_OK, False, "Usuario existente", response)
         else:
-            return {
-                "error": True,
-                "message": "Usuario no existente",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "Usuario no existente", None)
     else:
-        return {
-            "error": True,
-            "message":"Existen campos vacios.",
-            "res": None,
-            "version": APIversion()
-        }
+        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 
 #********* ruta: REGISTRAR USUARIO *********
-@user.post('/api/v1/account/register', status_code=200, tags=['Usuario'])
+@user.post('/api/v1/account/register', status_code=201, response_model=UserRegistro, tags=['Usuario'])
 async def registrar(user: UserRegistro):
         
     #Obtenemos el correo introducido por el usuario y lo pasa por validador de Email
@@ -182,8 +159,6 @@ async def registrar(user: UserRegistro):
 
     password= user.password.strip()
     password= BeautifulSoup(password, features='html.parser').text
-    passw= password.encode()
-    passw= encrytPassw(passw)
 
     email= user.email.strip()
     email= BeautifulSoup(email, features='html.parser').text
@@ -192,7 +167,7 @@ async def registrar(user: UserRegistro):
     phone= BeautifulSoup(phone, features='html.parser').text
 
     #Creamos un diccionario con los valores del usuario
-    newUser = {"username": username, "password": passw, "email": email, "name": name, "phone": phone}
+    newUser = {"username": username, "password": password, "email": email, "name": name, "phone": phone}
     
     if verificarVacio(newUser) == False:
         #Empezamos a procesar el username
@@ -205,97 +180,60 @@ async def registrar(user: UserRegistro):
                     #Elimina los caracteres del phone
                     phone= re.sub("\!|\'|\?|\ |\(|\)|\-|\+","", phone)
                     
-                    try:
-                        #Usamos el procedimiento almacenado para registrar el usuario y el token generado.
-                        with engine.connect() as conn:
-                            cursor= conn.connection.cursor()
-                            arg= (username, passw, email, name, phone, 0)
-                            cursor.callproc('registerUser', args=arg)
-                            conn.connection.commit()
-                            output= cursor.fetchone()
-                            output= output[0]
-                    finally:
-                        conn.close()
+                    if es_password_valido(password) == True:
+                        #Encodea el password
+                        passw= password.encode()
+                        passw= encrytPassw(passw)
                     
-                    if output == 1:
-                        
-                        token= generarToken()
-                        login= autoLogin(email, passw)
-                        
                         try:
+                            #Usamos el procedimiento almacenado para registrar el usuario y el token generado.
                             with engine.connect() as conn:
-                                conn.execute(keys.insert().values(keyUser= token, appConnect="default", userID=login))
+                                cursor= conn.connection.cursor()
+                                arg= (username, passw, email, name, phone, 0)
+                                cursor.callproc('registerUser', args=arg)
+                                conn.connection.commit()
+                                output= cursor.fetchone()
+                                output= output[0]
                         finally:
                             conn.close()
                         
-                        return {
-                            "error": False,
-                            "message": "Usuario agregado correctamente.",
-                            "res": {
-                                "appConnect": "default",
-                                "keyUser": token
-                            },
-                            "version": APIversion()
-                        }
+                        if output == 1:
+                            
+                            token= generarToken()
+                            login= autoLogin(email, passw)
+                            
+                            try:
+                                with engine.connect() as conn:
+                                    conn.execute(keys.insert().values(keyUser= token, appConnect="default", userID=login))
+                            finally:
+                                conn.close()
+                            
+                            return responseModelError2X(status.HTTP_201_CREATED, False, "Usuario agregado correctamente.", 
+                                                      {"appConnect": "default", "keyUser": token})
+                        else:
+                            return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "El usuario que intenta registrar ya existe.", None)
                     else:
-                        return {
-                            "error": True,
-                            "message": "El usuario que intenta registrar ya existe.",
-                            "res": None,
-                            "version": APIversion()
-                        }
+                        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "La contraseña no cumple con los requisitos.", None)
                 else:
-                    return {
-                        "error": True,
-                        "message": "Número de teléfono inválido.",
-                        "res": None,
-                        "version": APIversion()
-                    }
+                    return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Número de teléfono inválido.", None)
             else:
-                return {
-                    "error": True,
-                    "message": "Correo electrónico inválido.",
-                    "res": None,
-                    "version": APIversion()
-                }
+                return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Correo electrónico inválido.", None)
         else:
-            return {
-                "error": True,
-                "message": "Nombre de usuario inválido.",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Nombre de usuario inválido.", None)
     else:
-        return {
-            "error": True,
-            "message": "Existen campos vacios.",
-            "res": None,
-            "version": APIversion()
-        }
+        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 
 #********* ruta: LOGIN *********
-@user.post("/api/v1/account/login", status_code=200, tags=["Usuario"])
+@user.post("/api/v1/account/login", status_code=200, response_model=UserLogin, tags=["Usuario"])
 async def login(login: UserLogin):
     
     #Validando que la connection sea True
     def is_empty(con):
         if con:
-            return {
-                "error": False,
-                "message": "Inicio de seccion correctamente",
-                "res": {
-                    "keyUser": token
-                },
-                "version": APIversion()
-            }
+            return responseModelError2X(status.HTTP_200_OK, False, "Inicio de seccion correctamente.", {"keyUser": token})
         else:
-            return {
-                "error": False,
-                "message": "Usuario no encontrado",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError4X(status.HTTP_400_BAD_REQUEST, False, "Usuario no encontrado", None)
     
     #CAMPO: uceCampo: username, telefono, email
     username= login.username.strip()
@@ -352,13 +290,8 @@ async def login(login: UserLogin):
             finally:
                 conn.close()
         else:
-            return {
-                "error": True,
-                "message":"No se pudo completar la operación porque hubo un error en la validación.",
-                "res": None,
-                "version": APIversion()
-            }
-
+            return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "No se pudo completar la operación porque hubo un error en la validación.", None)
+        
         if output != None:
             #Almacenamos el userID del usuario en 'userIDK'
             output= output[0]
@@ -377,30 +310,15 @@ async def login(login: UserLogin):
 
                 return is_empty(conx)
             except:
-                return {
-                    "error": True,
-                    "message":"No se pudo ejecutar la peticion.",
-                    "res": None,
-                    "version": APIversion()
-                }
+                return responseModelError4X(status.HTTP_200_OK, True, "No se pudo ejecutar la peticion.", None)
         else:
-            return {
-                "error": True,
-                "message": "Username y/o Password inválido/s",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Username y/o Password inválido/s", None)
     else:
-        return {
-            "error": True,
-            "message": "Existen campos vacios.",
-            "res": None,
-            "version": APIversion()
-        }
+        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 
 #********* ruta: CERRAR SECCION *********
-@user.post('/api/v1/account/logout', status_code=200, tags=['Usuario'])
+@user.post('/api/v1/account/logout', status_code=200, response_model=UserLogout, tags=['Usuario'])
 async def logout(user: UserLogout):
     
     appConnect= user.appConnect.strip()
@@ -432,48 +350,23 @@ async def logout(user: UserLogout):
             finally:
                 conn.close()
         
-            return {
-                "error": False,
-                "message": "Seccion cerrada correctamente.",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError2X(status.HTTP_200_OK, False, "Seccion cerrada correctamente.", None)
         else:
-            return {
-               "error": True,
-                "message": "La seccion no existe.",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "La seccion no existe.", None)
     else:
-        return {
-            "error": True,
-            "message":"Existen campos vacios.",
-            "res": None,
-            "version": APIversion()
-        }
+        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 
 #********* ruta: OBTENER TODAS LAS APPS DEL USUARIO *********
-@user.post('/api/v1/account/getSections', status_code=200, tags=['Usuario'])
+@user.post('/api/v1/account/getSections', status_code=200, response_model=UserSeccion, tags=['Usuario'])
 async def getSections(user: UserSeccion):
 
     #Validando que la connection sea True
     def is_empty(con):
         if con:
-            return {
-                "error": False,
-                "message": "Apps conectadas a ypwLogin",
-                "res": conx,
-                "version": APIversion()
-            }
+            return responseModelError2X(status.HTTP_200_OK, False, "Apps conectadas a ypwLogin", conx)
         else:
-            return {
-                "error": False,
-                "message": "No existen apps conectadas a este usuario.",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError2X(status.HTTP_200_OK, False, "No existen apps conectadas a este usuario.", None)
     
     appConnect= user.appConnect.strip()
     appConnect= BeautifulSoup(appConnect, features='html.parser').text
@@ -508,32 +401,17 @@ async def getSections(user: UserSeccion):
 
                 return is_empty(conx)
             except:
-                return {
-                    "error": True,
-                    "message":"No se pudo ejecutar la peticion.",
-                    "res": None,
-                    "version": APIversion()
-                }
+                return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "No se pudo ejecutar la peticion.", None)
         else:
-            return {
-                "error": True,
-                "message": "keyUser y/o appConnect inválido/s",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "keyUser y/o appConnect inválido/s", None)
     else:
-        return {
-            "error": True,
-            "message": "Existen campos vacios.",
-            "res": None,
-            "version": APIversion()
-        }
+        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 
 #********* ruta: CAMBIAR CONTRASEÑA DEL USUARIO *********
-@user.post('/api/v1/account/changePassword', status_code=200, tags=['Usuario'])
+@user.post('/api/v1/account/changePassword', status_code=200, response_model=ChangePassw, tags=['Usuario'])
 async def changePassword(user: ChangePassw):
-            
+    
     appConnect= user.appConnect.strip()
     appConnect= BeautifulSoup(appConnect, features='html.parser').text
 
@@ -578,39 +456,19 @@ async def changePassword(user: ChangePassw):
                 finally:
                     conn.close()
                 
-                return {
-                    "error": False,
-                    "message": {
+                return responseModelError2X(status.HTTP_200_OK, False, {
                         "m1:": "La contraseña ha sido actualizada exitosamente.",
                         "m2:": "Todas las secciones se han eliminado."
-                    },
-                    "res": None,
-                    "version": APIversion()
-                }
+                    }, None)
             else:
-                return {
-                    "error": False,
-                    "message": "La contraseña ha sido actualizada exitosamente.",
-                    "res": None,
-                    "version": APIversion()
-                }
+                return responseModelError2X(status.HTTP_200_OK, False, "La contraseña ha sido actualizada exitosamente.", None)
         else:
-            return {
-               "error": True,
-                "message": "Username y/o Password inválido/s.",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Username y/o Password inválido/s.", None)
     else:
-        return {
-            "error": True,
-            "message":"Existen campos vacios.",
-            "res": None,
-            "version": APIversion()
-        }
+        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 #--------- ruta: ENVIO DE CODIGO A EMAIL --------
-@user.post('/api/v1/account/setCode/email', status_code=200, tags=['Usuario'])
+@user.post('/api/v1/account/setCode/email', status_code=201, response_model=SetCode, tags=['Usuario'])
 async def enviarPassCodeEmail(user: SetCode):
     
     #>> Elimina fallas de la libreria: BeautifulSoup
@@ -619,19 +477,9 @@ async def enviarPassCodeEmail(user: SetCode):
     #>> Verificar el envio del cbodyorreo: capturando errores
     def verEnvioEmail(email, codeTMP, header, body, support, footer):
         if enviarEmail(email, codeTMP, header, body, support, footer) == None:
-            return {
-                "error": False,
-                "message": "Correo enviado exitosamente.",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError2X(status.HTTP_200_OK, False, "Correo enviado exitosamente.", None)
         else:
-            return {
-                "error": False,
-                "message": "Correo no se pudo enviar.",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Correo no se pudo enviar.", None)
     
     email= user.email.strip()
     email= BeautifulSoup(email, features='html.parser').text
@@ -684,29 +532,14 @@ async def enviarPassCodeEmail(user: SetCode):
                     
                     return verEnvioEmail(email, codeTMP, header, body, support, footer)
             else:
-                return {
-                    "error": True,
-                    "message": "Correo electrónico no encontrado.",
-                    "res": None,
-                    "version": APIversion()
-                }
+                return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Correo electrónico no encontrado.", None)
         else:
-            return {
-                "error": True,
-                "message":"Correo electrónico inválido.",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Correo electrónico inválido.", None)
     else:
-        return {
-            "error": True,
-            "message":"Existen campos vacios.",
-            "res": None,
-            "version": APIversion()
-        }
+        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 #--------- ruta: OBTENER USUARIO --------
-@user.post('/api/v1/account/changePasswCode/email', status_code=200, tags=['Usuario'])
+@user.post('/api/v1/account/changePasswCode/email', status_code=200, response_model=RecoveryPassCode, tags=['Usuario'])
 async def cambiarPassCodeEmail(user: RecoveryPassCode):
     
     email= user.email.strip()
@@ -743,33 +576,13 @@ async def cambiarPassCodeEmail(user: RecoveryPassCode):
                 finally:
                     conn.close()
                 
-                return {
-                    "error": False,
-                    "message":"Contraseña ha sido restablecida exitosamente.",
-                    "res": None,
-                    "version": APIversion()
-                }
+                return responseModelError2X(status.HTTP_200_OK, False, "Contraseña ha sido restablecida exitosamente.", None)
             else:
-                return {
-                    "error": True,
-                    "message": "Correo electrónico y/o Password inválido/s",
-                    "res": None,
-                    "version": APIversion()
-                }
+                return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Correo electrónico y/o Password inválido/s", None)
         else:
-            return {
-                "error": True,
-                "message":"Correo electrónico inválido.",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Correo electrónico inválido.", None)
     else:
-        return {
-            "error": True,
-            "message":"Existen campos vacios.",
-            "res": None,
-            "version": APIversion()
-        }
+        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 """
 #********* ruta: ACTUALIZAR *********
@@ -929,26 +742,11 @@ async def actualizarDatos(user: UserUpdateOpcional):
             finally:
                 conn.close()
             
-            return {
-                "error": False,
-                "message": "Datos actualizados exitosamente.",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError2X(status.HTTP_200_OK, False, "Datos actualizados exitosamente.", None)
         else:
-            return {
-                "error": True,
-                "message": "No se encontró la seccion.",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "No se encontró la seccion.", None)
     else:
-        return {
-            "error": True,
-            "message":"Existen campos vacios.",
-            "res": None,
-            "version": APIversion()
-        }
+        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 #********* ruta: ACTUALIZAR *********
 @user.put("/api/v1/account/updateFieldData", status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
@@ -984,30 +782,10 @@ async def actualizarCampoData(user: UpdateFieldData):
                 finally:
                     conn.close()
                 
-                return {
-                    "error": False,
-                    "message": "Datos actualizados exitosamente.",
-                    "res": None,
-                    "version": APIversion()
-                }
+                return responseModelError2X(status.HTTP_200_OK, False, "Datos actualizados exitosamente.", None)
             else:
-                return {
-                    "error": True,
-                    "message": "No se enviaron datos para actualizar.",
-                    "res": None,
-                    "version": APIversion()
-                }
+                return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "No se enviaron datos para actualizar.", None)
         else:
-            return {
-                "error": True,
-                "message": "No se encontró la seccion.",
-                "res": None,
-                "version": APIversion()
-            }
+            return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "No se encontró la seccion.", None)
     else:
-        return {
-            "error": True,
-            "message":"Existen campos vacios.",
-            "res": None,
-            "version": APIversion()
-        }
+        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)

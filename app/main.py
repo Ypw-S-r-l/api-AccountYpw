@@ -7,8 +7,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi import Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from Database.conexion import conn
 from config.methods import APIversion
+
 
 description = """
 AccountYPW API helps you do awesome stuff. 🚀
@@ -40,15 +41,30 @@ app = FastAPI(debug=True,
     })
 
 
+#-------- Eventos para validar conexion a DB
+@user.on_event("startup")
+async def startup():
+    if conn.close:
+        conn.connect()
+    print("Application startup")
+
+@user.on_event("shutdown")
+async def shutdown():
+    if not conn.close:
+        conn.close()
+    print("Application shutdown")
+
 #Funcion para responder cuando el usuario ingrese una ruta invalida
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    return JSONResponse({
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content=jsonable_encoder({
             "error": True,
             "message": "Ruta invalida.",
             "res": None,
             "version": APIversion()
-        }
+        })
     )
 
 #Funcion para responder cuando faltan campos
@@ -56,7 +72,12 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=jsonable_encoder({"error": True, "message": "Inexistencia de campos.", "res": None, "version": APIversion()}),
+        content=jsonable_encoder({
+            "error": True,
+            "message": "Inexistencia de campos.",
+            "res": None,
+            "version": APIversion()
+        })
     )
 
 #Solucion CORS
