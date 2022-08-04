@@ -35,7 +35,7 @@ users = Table(
     Column('puertoDB', String(255), nullable=True),
     Column('pagWeb', String(255), nullable=True),
     Column('data', JSON, nullable=True),
-    Column('codetmp', String(20), nullable=True)
+    Column('codetmp', Integer, nullable=True)
 )
 
 
