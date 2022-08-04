@@ -562,14 +562,15 @@ async def cambiarPassCodeEmail(user: RecoveryPassCode):
     
     newPassword= user.newPassword.strip()
     newPassword= BeautifulSoup(newPassword, features='html.parser').text
-    newPassw= newPassword.encode()
-    newPassw= encrytPassw(newPassw)
     
-    dataRecovery= {"email": email, "codetmp": codetmp, "newPassword": newPassw}
+    dataRecovery= {"email": email, "codetmp": codetmp, "newPassword": newPassword}
     
     #Comprueba los campos y ejecuta las conexiones
     if verificarVacio(dataRecovery) == False:
         if es_password_valido(newPassword) == True:
+            newPassw= newPassword.encode()
+            newPassw= encrytPassw(newPassw)
+            
             if es_correo_valido(email) == True:
                 
                 try:
