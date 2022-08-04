@@ -3,7 +3,7 @@ from fastapi.encoders import jsonable_encoder
 
 #Metodos de control de versiones
 def APIversion():
-    verApi= ("v1", "v1.3.1")
+    verApi= ("v1", "v1.3.2")
     return verApi
 
 version= APIversion()

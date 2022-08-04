@@ -76,6 +76,12 @@ def es_password_valido(password):
     expresion_regular= r"^\S(.|\s){7,200}$"
     return re.match(expresion_regular, password) is not None
 
+#VALIDANDO NAME: expresiones regulares
+def es_nombre_valido(name):
+    expresion_regular= r"^[a-zA-Z]{3,20} ?[a-zA-Z]{2,40}?$"
+    return re.match(expresion_regular, name) is not None
+
+
 #Generador de token/keyUser.
 def generarToken():
     payload= datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
@@ -172,56 +178,60 @@ async def registrar(user: UserRegistro):
     newUser = {"username": username, "password": password, "email": email, "name": name, "phone": phone}
     
     if verificarVacio(newUser) == False:
-        #Empezamos a procesar el username
-        if es_usuario_valido(username) == True:
-            #Empezamos a procesar el correo electronico
-            if es_correo_valido(email) == True:
-                #Empezamos a procesar el numero de telefono
-                if es_telefono_valido(phone) == True:
-                    
-                    #Elimina los caracteres del phone
-                    phone= re.sub("\!|\'|\?|\ |\(|\)|\-|\+","", phone)
-                    
-                    if es_password_valido(password) == True:
-                        #Encodea el password
-                        passw= password.encode()
-                        passw= encrytPassw(passw)
-                    
-                        try:
-                            #Usamos el procedimiento almacenado para registrar el usuario y el token generado.
-                            with engine.connect() as conn:
-                                cursor= conn.connection.cursor()
-                                arg= (username, passw, email, name, phone, 0)
-                                cursor.callproc('registerUser', args=arg)
-                                conn.connection.commit()
-                                output= cursor.fetchone()
-                                output= output[0]
-                        finally:
-                            conn.close()
+        #Empezamos a procesar el name
+        if es_nombre_valido(name) == True:
+            #Empezamos a procesar el username
+            if es_usuario_valido(username) == True:
+                #Empezamos a procesar el correo electronico
+                if es_correo_valido(email) == True:
+                    #Empezamos a procesar el numero de telefono
+                    if es_telefono_valido(phone) == True:
                         
-                        if output == 1:
-                            
-                            token= generarToken()
-                            login= autoLogin(email, passw)
-                            
+                        #Elimina los caracteres del phone
+                        phone= re.sub("\!|\'|\?|\ |\(|\)|\-|\+","", phone)
+                        
+                        if es_password_valido(password) == True:
+                            #Encodea el password
+                            passw= password.encode()
+                            passw= encrytPassw(passw)
+                        
                             try:
+                                #Usamos el procedimiento almacenado para registrar el usuario y el token generado.
                                 with engine.connect() as conn:
-                                    conn.execute(keys.insert().values(keyUser= token, appConnect="default", userID=login))
+                                    cursor= conn.connection.cursor()
+                                    arg= (username, passw, email, name, phone, 0)
+                                    cursor.callproc('registerUser', args=arg)
+                                    conn.connection.commit()
+                                    output= cursor.fetchone()
+                                    output= output[0]
                             finally:
                                 conn.close()
                             
-                            return responseModelError2X(status.HTTP_201_CREATED, False, "Usuario agregado correctamente.", 
-                                                      {"appConnect": "default", "keyUser": token})
+                            if output == 1:
+                                
+                                token= generarToken()
+                                login= autoLogin(email, passw)
+                                
+                                try:
+                                    with engine.connect() as conn:
+                                        conn.execute(keys.insert().values(keyUser= token, appConnect="default", userID=login))
+                                finally:
+                                    conn.close()
+                                
+                                return responseModelError2X(status.HTTP_201_CREATED, False, "Usuario agregado correctamente.", 
+                                                        {"appConnect": "default", "keyUser": token})
+                            else:
+                                return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "El usuario que intenta registrar ya existe.", None)
                         else:
-                            return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "El usuario que intenta registrar ya existe.", None)
+                            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "La contraseña no cumple con los requisitos.", None)
                     else:
-                        return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "La contraseña no cumple con los requisitos.", None)
+                        return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Número de teléfono inválido.", None)
                 else:
-                    return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Número de teléfono inválido.", None)
+                    return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico inválido.", None)
             else:
-                return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico inválido.", None)
+                return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Nombre de usuario inválido.", None)
         else:
-            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Nombre de usuario inválido.", None)
+                return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "El nombre no cumple con los requisitos.", None)
     else:
         return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
