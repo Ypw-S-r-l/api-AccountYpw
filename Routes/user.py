@@ -569,30 +569,32 @@ async def cambiarPassCodeEmail(user: RecoveryPassCode):
     
     #Comprueba los campos y ejecuta las conexiones
     if verificarVacio(dataRecovery) == False:
-        
-        if es_correo_valido(email) == True:
-            
-            try:
-                with engine.connect() as conn:
-                    sql= text("select * from users where email=:email and codetmp=:codetmp")
-                    output= conn.execute(sql, email=email, codetmp=codetmp).first()
-            finally:
-                conn.close()
-            
-            
-            if output != None:
+        if es_password_valido(newPassword) == True:
+            if es_correo_valido(email) == True:
                 
                 try:
                     with engine.connect() as conn:
-                        conn.execute(users.update().values(password= newPassw, codetmp=None).where(users.c.codetmp == codetmp, users.c.email == email))
+                        sql= text("select * from users where email=:email and codetmp=:codetmp")
+                        output= conn.execute(sql, email=email, codetmp=codetmp).first()
                 finally:
                     conn.close()
                 
-                return responseModelError2X(status.HTTP_200_OK, False, "Contraseña ha sido restablecida exitosamente.", None)
+                
+                if output != None:
+                    
+                    try:
+                        with engine.connect() as conn:
+                            conn.execute(users.update().values(password= newPassw, codetmp=None).where(users.c.codetmp == codetmp, users.c.email == email))
+                    finally:
+                        conn.close()
+                    
+                    return responseModelError2X(status.HTTP_200_OK, False, "Contraseña ha sido restablecida exitosamente.", None)
+                else:
+                    return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico y/o Password inválido/s", None)
             else:
-                return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico y/o Password inválido/s", None)
+                return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico inválido.", None)
         else:
-            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico inválido.", None)
+            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "La contraseña no cumple con los requisitos.", None)
     else:
         return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
