@@ -95,15 +95,11 @@ def generarToken():
     return token
 
 # Generador de codigo de 6 digitos.
-
-
 def generarCode():
     codetmp = random.randint(100000, 999999)
     return codetmp
 
 # FUNCION PARA AUTOLOGIN AL REGISTRARSE
-
-
 def autoLogin(email, passw):
     arg = (email, passw,)
 
