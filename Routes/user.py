@@ -1,4 +1,10 @@
-import re, secrets, bcrypt, base64, hashlib, random, warnings
+import re
+import secrets
+import bcrypt
+import base64
+import hashlib
+import random
+import warnings
 from starlette.status import *
 from fastapi import APIRouter, status
 from bs4 import BeautifulSoup
@@ -58,30 +64,40 @@ def encrytPassw(passw):
 
 # VALIDANDO EMAIL: expresiones regulares
 def es_correo_valido(correo):
-    expresion_regular = r"^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$"
+    expresion_regular = r"^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$"
     return re.match(expresion_regular, correo) is not None
 
 # VALIDANDO PHONE: expresiones regulares
+
+
 def es_telefono_valido(phone):
     expresion_regular = r"^[+]?(\d{1,4})?\s?-?[.]?[(]?\d{3}[)]?\s?-?[.]?\d{3}\s?-?[.]?\d{4}$"
     return re.match(expresion_regular, phone) is not None
 
 # VALIDANDO USERNAME: expresiones regulares
+
+
 def es_usuario_valido(username):
     expresion_regular = r"^[a-zA-Z0-9@]+[._a-zA-Z0-9@]{3,34}$"
     return re.match(expresion_regular, username) is not None
 
 # VALIDANDO PASSWORD: expresiones regulares
+
+
 def es_password_valido(password):
     expresion_regular = r"^\S(.|\s){7,200}$"
     return re.match(expresion_regular, password) is not None
 
 # VALIDANDO NAME: expresiones regulares
+
+
 def es_nombre_valido(name):
     expresion_regular = r"^[a-zA-Z]{3,20} ?[a-zA-Z]{2,40}?$"
     return re.match(expresion_regular, name) is not None
 
 # VALIDANDO CODE: expresiones regulares
+
+
 def es_code_valido(code):
     expresion_regular = r"^\d{6}$"
     return re.match(expresion_regular, code) is not None
@@ -587,7 +603,7 @@ async def cambiarPassCodeEmail(user: RecoveryPassCode):
     email = BeautifulSoup(email, features='html.parser').text
 
     codetmp = user.codetmp
-    code= str(codetmp)
+    code = str(codetmp)
     codetmp = BeautifulSoup(code, features='html.parser').text
 
     newPassword = user.newPassword.strip()
@@ -606,7 +622,7 @@ async def cambiarPassCodeEmail(user: RecoveryPassCode):
             if es_correo_valido(email) == True:
 
                 if es_code_valido(codetmp) == True:
-                    codetmp= int(codetmp)
+                    codetmp = int(codetmp)
                     try:
                         with engine.connect() as conn:
                             sql = text(
