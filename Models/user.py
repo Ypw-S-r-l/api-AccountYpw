@@ -2,10 +2,11 @@ from sqlalchemy import JSON, Table, Column
 from sqlalchemy.sql.sqltypes import Integer, String, TIMESTAMP
 from Database.conexion import meta, engine
 
-#------- Creacion de la tabla 'users' y 'keys'
+# ------- Creacion de la tabla 'users' y 'keys'
 users = Table(
     "users", meta,
-    Column('userID', Integer, primary_key=True, unique=True, autoincrement=True),
+    Column('userID', Integer, primary_key=True,
+           unique=True, autoincrement=True),
     Column('username', String(35), nullable=False, unique=True),
     Column('password', String(50), nullable=False),
     Column('name', String(50), nullable=False),
@@ -47,4 +48,4 @@ keys = Table(
     Column('keyID', Integer, nullable=False)
 )
 
-meta.create_all(engine)     #Creando todo, las tablas, funciones, etc
+meta.create_all(engine)  # Creando todo, las tablas, funciones, etc

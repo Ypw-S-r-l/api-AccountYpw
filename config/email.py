@@ -1,6 +1,7 @@
 import smtplib
 from email.message import EmailMessage
 
+
 def enviarEmail(destino, code, header, body, support, footer):
 
     msg = EmailMessage()
@@ -8,7 +9,8 @@ def enviarEmail(destino, code, header, body, support, footer):
     msg['From'] = "app@ypw.com.do"
     msg['To'] = destino
 
-    msg.set_content('Se te ha enviado un codigo como respuesta a tu peticion de recuperacion de contraseña.')
+    msg.set_content(
+        'Se te ha enviado un codigo como respuesta a tu peticion de recuperacion de contraseña.')
 
     msg.add_alternative(f"""\
     <!DOCTYPE html>

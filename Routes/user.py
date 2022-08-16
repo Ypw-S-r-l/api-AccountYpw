@@ -92,7 +92,7 @@ def es_password_valido(password):
 
 
 def es_nombre_valido(name):
-    expresion_regular = r"^[a-zA-Z]{3,20} ?[a-zA-Z]{2,40}?$"
+    expresion_regular = r"^[a-zA-Z]{2,20} ?[a-zA-Z]{2,40}?$"
     return re.match(expresion_regular, name) is not None
 
 # VALIDANDO CODE: expresiones regulares

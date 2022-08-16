@@ -5,7 +5,7 @@ from fastapi.encoders import jsonable_encoder
 
 
 def APIversion():
-    verApi = ("v1", "v1.3.6")
+    verApi = ("v1", "v1.4.0")  # Version de la api global
     return verApi
 
 
