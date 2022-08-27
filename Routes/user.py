@@ -78,7 +78,7 @@ def es_telefono_valido(phone):
 
 
 def es_usuario_valido(username):
-    expresion_regular = r"^[a-zA-Z0-9@]+[._a-zA-Z0-9@]{3,34}$"
+    expresion_regular = r"^[a-zA-Z]{2,20}( ?[a-zA-Z]{2,40}?(\s)+)+$"
     return re.match(expresion_regular, username) is not None
 
 # VALIDANDO PASSWORD: expresiones regulares
