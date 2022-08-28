@@ -1,25 +1,16 @@
-import re
-import secrets
-import bcrypt
-import base64
-import hashlib
-import random
-import warnings
+import re, secrets, bcrypt, base64, hashlib, random, warnings
 from starlette.status import *
 from fastapi import APIRouter, status
 from bs4 import BeautifulSoup
 from sqlalchemy import text
 from Models.index import users, keys
-from Schemas.schemas import UserLogin, UserObtener, UserRegistro, UserUpdate, UserUpdateOpcional, UserLogout, UserSeccion, ChangePassw, SetCode, RecoveryPassCode, UpdateFieldData
-from config.email import enviarEmail
+from Schemas.schemas import *
 from datetime import datetime
 from cryptography.fernet import Fernet
 from Database.conexion import engine
-from config.methods import APIversion, responseModelError2X, responseModelError4X
-
+from config.methods import *
 
 user = APIRouter()
-
 version = APIversion()
 
 
@@ -68,36 +59,26 @@ def es_correo_valido(correo):
     return re.match(expresion_regular, correo) is not None
 
 # VALIDANDO PHONE: expresiones regulares
-
-
 def es_telefono_valido(phone):
     expresion_regular = r"^[+]?(\d{1,4})?\s?-?[.]?[(]?\d{3}[)]?\s?-?[.]?\d{3}\s?-?[.]?\d{4}$"
     return re.match(expresion_regular, phone) is not None
 
 # VALIDANDO USERNAME: expresiones regulares
-
-
 def es_usuario_valido(username):
     expresion_regular = r"^[a-zA-Z0-9@]+[._a-zA-Z0-9@]{3,34}$"
     return re.match(expresion_regular, username) is not None
 
 # VALIDANDO PASSWORD: expresiones regulares
-
-
 def es_password_valido(password):
     expresion_regular = r"^\S(.|\s){7,200}$"
     return re.match(expresion_regular, password) is not None
 
 # VALIDANDO NAME: expresiones regulares
-
-
 def es_nombre_valido(name):
     expresion_regular = r"^[a-zA-Z]{3,20} ?[a-zA-Z]{2,40}?$"
     return re.match(expresion_regular, name) is not None
 
 # VALIDANDO CODE: expresiones regulares
-
-
 def es_code_valido(code):
     expresion_regular = r"^\d{6}$"
     return re.match(expresion_regular, code) is not None
@@ -114,21 +95,6 @@ def generarToken():
 def generarCode():
     codetmp = random.randint(100000, 999999)
     return codetmp
-
-# FUNCION PARA AUTOLOGIN AL REGISTRARSE
-def autoLogin(email, passw):
-    arg = (email, passw,)
-
-    try:
-        with engine.connect() as conn:
-            cursor = conn.connection.cursor()
-            cursor.callproc('loginEmail', args=arg)
-            conn.connection.commit()
-            output = cursor.fetchone()
-            userID = output[0]
-    finally:
-        conn.close()
-    return userID
 
 
 # --------- ruta: OBTENER USUARIO --------
@@ -217,13 +183,16 @@ async def registrar(user: UserRegistro):
                             # Encodea el password
                             passw = password.encode()
                             passw = encrytPassw(passw)
+                            
+                            #>> Generando codigo de activacion de cuenta
+                            codeTMP = generarCode()
 
                             try:
                                 # Usamos el procedimiento almacenado para registrar el usuario y el token generado.
                                 with engine.connect() as conn:
                                     cursor = conn.connection.cursor()
                                     arg = (username, passw,
-                                           email, name, phone, 0)
+                                           email, name, phone, codeTMP, 0)
                                     cursor.callproc('registerUser', args=arg)
                                     conn.connection.commit()
                                     output = cursor.fetchone()
@@ -232,19 +201,13 @@ async def registrar(user: UserRegistro):
                                 conn.close()
 
                             if output == 1:
+                                
+                                header = "YPW"
+                                body = "CÓDIGO"
+                                support = "https://ypw.com.do/#about"
+                                footer = "2022 © YPW S.R.L"
 
-                                token = generarToken()
-                                login = autoLogin(email, passw)
-
-                                try:
-                                    with engine.connect() as conn:
-                                        conn.execute(keys.insert().values(
-                                            keyUser=token, appConnect="default", userID=login))
-                                finally:
-                                    conn.close()
-
-                                return responseModelError2X(status.HTTP_201_CREATED, False, "Usuario agregado correctamente.",
-                                                            {"appConnect": "default", "keyUser": token})
+                                return verEnvioEmail(email, codeTMP, header, body, support, footer, "CÓDIGO DE ACTIVACIÓN DE CUENTA", "Se te ha enviado un código a este correo para que actives tu cuenta.", "Usuario agregado correctamente.", "No se pudo enviar a su correo el código de activación de su cuenta.")
                             else:
                                 return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "El usuario que intenta registrar ya existe.", None)
                         else:
@@ -523,13 +486,6 @@ async def enviarPassCodeEmail(user: SetCode):
     # >> Elimina fallas de la libreria: BeautifulSoup
     warnings.filterwarnings("ignore", category=UserWarning, module='bs4')
 
-    # >> Verificar el envio del cbodyorreo: capturando errores
-    def verEnvioEmail(email, codeTMP, header, body, support, footer):
-        if enviarEmail(email, codeTMP, header, body, support, footer) == None:
-            return responseModelError2X(status.HTTP_200_OK, False, "Correo enviado exitosamente.", None)
-        else:
-            return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Correo no se pudo enviar.", None)
-
     email = user.email.strip()
     email = BeautifulSoup(email, features='html.parser').text
 
@@ -580,8 +536,8 @@ async def enviarPassCodeEmail(user: SetCode):
                     body = "Su codigo de recuperacion es:"
                     support = "https://ypw.com.do/#about"
                     footer = "2022 © YPW S.R.L"
-
-                    return verEnvioEmail(email, codeTMP, header, body, support, footer)
+                    
+                    return verEnvioEmail(email, codeTMP, header, body, support, footer, "Recuperación de contraseña", "Se te ha enviado un código como respuesta a tu peticion de recuperacion de contraseña.", "Correo enviado exitosamente.", "El correo no se pudo enviar.")
             else:
                 return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "Correo electrónico no encontrado.", None)
         else:
@@ -589,9 +545,8 @@ async def enviarPassCodeEmail(user: SetCode):
     else:
         return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
+
 # --------- ruta: OBTENER USUARIO --------
-
-
 @user.post(f'/api/{version[0]}/account/changePasswCode/email', status_code=200, response_model=RecoveryPassCode, tags=['Usuario'])
 async def cambiarPassCodeEmail(user: RecoveryPassCode):
 
@@ -599,7 +554,7 @@ async def cambiarPassCodeEmail(user: RecoveryPassCode):
     email = BeautifulSoup(email, features='html.parser').text
 
     codetmp = user.codetmp
-    code = str(codetmp)
+    code = str(codetmp).strip()
     codetmp = BeautifulSoup(code, features='html.parser').text
 
     newPassword = user.newPassword.strip()
@@ -629,11 +584,14 @@ async def cambiarPassCodeEmail(user: RecoveryPassCode):
                         conn.close()
 
                     if output != None:
-
                         try:
                             with engine.connect() as conn:
                                 conn.execute(users.update().values(password=newPassw, codetmp=None).where(
                                     users.c.codetmp == codetmp, users.c.email == email))
+                                
+                                #>> se eliminan todas las keys/secciones del usuario
+                                userID= output["userID"]
+                                conn.execute(keys.delete().where(keys.c.userID == userID))
                         finally:
                             conn.close()
 
@@ -739,8 +697,6 @@ async def actualizarUsuario(user: UserUpdate):
 """
 
 # ********* ruta: ACTUALIZAR *********
-
-
 @user.put(f'/api/{version[0]}/account/updateDataUser', status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
 async def actualizarDatos(user: UserUpdateOpcional):
 
@@ -766,13 +722,12 @@ async def actualizarDatos(user: UserUpdateOpcional):
     country = BeautifulSoup(country, features='html.parser').text
 
     shippingAddress = user.shippingAddress
-    #shippingAddress= str(shippingAddress).strip()
-    #shippingAddress= BeautifulSoup(shippingAddress, features='html.parser').text
+    shippingAddress= str(shippingAddress).strip()
+    shippingAddress= BeautifulSoup(shippingAddress, features='html.parser').text
 
     identificationCard = user.identificationCard
     identificationCard = str(identificationCard).strip()
-    identificationCard = BeautifulSoup(
-        identificationCard, features='html.parser').text
+    identificationCard = BeautifulSoup(identificationCard, features='html.parser').text
 
     accountVersion = user.accountVersion
     accountVersion = str(accountVersion).strip()
@@ -793,34 +748,37 @@ async def actualizarDatos(user: UserUpdateOpcional):
     array = {"keyUser": keyUser, "appConnect": appConnect}
 
     if verificarVacio(array) == False:
-        # Consultamos a la base de datos para obtener el userID del usuario
-        try:
-            with engine.connect() as conn:
-                vlogin = conn.execute(keys.select(keys.c.userID).where(
-                    keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
-        finally:
-            conn.close()
-
-        if vlogin != None:
-
-            userID = vlogin[0]
-
+       
+        if es_nombre_valido(name) == True:
+            # Consultamos a la base de datos para obtener el userID del usuario
             try:
                 with engine.connect() as conn:
-                    conn.execute(users.update().values(name=name, dateOfBirth=dateOfBirth, language=language, country=country, shippingAddress=shippingAddress,
-                                 identificationCard=identificationCard, accountVersion=accountVersion, timeZone=timeZone, accountType=accountType, pagWeb=pagWeb).where(users.c.userID == userID))
+                    vlogin = conn.execute(keys.select(keys.c.userID).where(
+                        keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
             finally:
                 conn.close()
 
-            return responseModelError2X(status.HTTP_200_OK, False, "Datos actualizados exitosamente.", None)
+            if vlogin != None:
+
+                userID = vlogin[0]
+
+                try:
+                    with engine.connect() as conn:
+                        conn.execute(users.update().values(name=name, dateOfBirth=dateOfBirth, language=language, country=country, shippingAddress=shippingAddress,
+                                    identificationCard=identificationCard, accountVersion=accountVersion, timeZone=timeZone, accountType=accountType, pagWeb=pagWeb).where(users.c.userID == userID))
+                finally:
+                    conn.close()
+
+                return responseModelError2X(status.HTTP_200_OK, False, "Datos actualizados exitosamente.", None)
+            else:
+                return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "No se encontró la seccion.", None)
         else:
-            return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "No se encontró la seccion.", None)
+            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "El nombre no cumple con los requisitos.", None)
     else:
         return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
+
 # ********* ruta: ACTUALIZAR *********
-
-
 @user.put(f'/api/{version[0]}/account/updateFieldData', status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
 async def actualizarCampoData(user: UpdateFieldData):
 
@@ -861,5 +819,59 @@ async def actualizarCampoData(user: UpdateFieldData):
                 return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "No se enviaron datos para actualizar.", None)
         else:
             return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "No se encontró la seccion.", None)
+    else:
+        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+
+
+# ********* ruta: INSERTAR CODIGO PARA VERIFICACION DE USUARIO *********
+@user.post(f'/api/{version[0]}/account/activateAccount/email', status_code=200, response_model=setCodeActivationEmail, tags=['Usuario'])
+async def activateAccount(user: setCodeActivationEmail):
+
+    email = user.email.strip()
+    email = BeautifulSoup(email, features='html.parser').text
+
+    codetmp = str(user.codetmp).strip()
+    codetmp = BeautifulSoup(codetmp, features='html.parser').text
+
+    datArray = {"email": email, "codetmp": codetmp}
+    
+    if verificarVacio(datArray) == False:
+        if es_correo_valido(email) == True:
+            
+            if es_code_valido(codetmp) == True:
+                
+                #>> verificarCuentaRegistrada: email
+                data= verCuentaRegistrada(email)
+                
+                if data != None:
+                    #>> verificarCuentaActivada: email, code
+                    dataUser= verCuentaActivada(email, codetmp)
+
+                    if dataUser != None:
+                        passw= dataUser["password"]
+                        #>> generar token= keyUser
+                        token= generarToken()
+
+                        try:
+                            with engine.connect() as conn:
+                                conn.execute(users.update().values(codetmp=None, block=0).where(users.c.email == email))
+                            
+                                #>> autoLogin: email, password
+                                login= autoLogin(email, passw)
+                                
+                                conn.execute(keys.insert().values(keyUser=token, appConnect="default", userID=login))
+                                conn.connection.commit()
+                        finally:
+                            conn.close()
+
+                        return responseModelError2X(status.HTTP_200_OK, False, "Usuario verificado exitosamente.", None)
+                    else:
+                        return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "No es necesaria la activación de este usuario. Esta cuenta ha sido ya verificada anteriormente.", None)
+                else:
+                    return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "Usuario no encontrado.", None)
+            else:
+                return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "El código introducido no cumple con los requisitos.", None)
+        else:
+            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico inválido.", None)
     else:
         return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)

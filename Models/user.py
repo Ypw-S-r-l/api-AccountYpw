@@ -1,5 +1,5 @@
 from sqlalchemy import JSON, Table, Column
-from sqlalchemy.sql.sqltypes import Integer, String, TIMESTAMP
+from sqlalchemy.sql.sqltypes import Integer, String, TIMESTAMP, Boolean
 from Database.conexion import meta, engine
 
 #------- Creacion de la tabla 'users' y 'keys'
@@ -35,7 +35,8 @@ users = Table(
     Column('puertoDB', String(255), nullable=True),
     Column('pagWeb', String(255), nullable=True),
     Column('data', JSON, nullable=True),
-    Column('codetmp', Integer, nullable=True)
+    Column('codetmp', Integer, nullable=True),
+    Column('block', Boolean, nullable=True)
 )
 
 

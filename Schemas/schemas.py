@@ -99,3 +99,7 @@ class UpdateFieldData(BaseModel):
     appConnect: str
     keyUser: str
     data: dict #JSON
+
+class setCodeActivationEmail(BaseModel):
+    email: str
+    codetmp: int

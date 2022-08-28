@@ -1,15 +1,15 @@
 import smtplib
 from email.message import EmailMessage
 
-def enviarEmail(destino, code, header, body, support, footer):
-
+def enviarEmail(destino, code, header, body, support, footer, titulo, asunto):
+    
     msg = EmailMessage()
-    msg['Subject'] = 'Recuperación de contraseña'
+    msg['Subject'] = titulo
     msg['From'] = "app@ypw.com.do"
     msg['To'] = destino
-
-    msg.set_content('Se te ha enviado un codigo como respuesta a tu peticion de recuperacion de contraseña.')
-
+    
+    msg.set_content(asunto)
+    
     msg.add_alternative(f"""\
     <!DOCTYPE html>
     <html lang="en">
@@ -24,7 +24,7 @@ def enviarEmail(destino, code, header, body, support, footer):
     <body style="background-color:#F9F9F9; font-family: 'Poppins', sans-serif; text-align: center;">
         <div class="cuerpo" style="background-color:#FFFFFF; padding:2em;">
             <h1 style="text-align: center;">{header}</h1>
-            <h3 style="text-align: center;">Recovery password</h3>
+            <h3 style="text-align: center;">{titulo}</h3>
             <h1style="text-align: center;">{body}</h1>
             <h2 style="text-align: center; margin=1rem; color:#006AAB">{code}</h2>
             
