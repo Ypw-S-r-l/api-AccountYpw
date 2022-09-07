@@ -2,9 +2,12 @@ version: '3.10'
 services:
     app:
         build: .
-        #privileged: true
-        #user: jenkins
-        container_name: loginypw
+        volumes:
+            - volapilogin:\data\profile
+        container_name: apilogin
         command: uvicorn app.main:app --proxy-headers --host 0.0.0.0 --port 8000
         ports:
             - "8000:8000"
+volumes:
+    volapilogin:
+        name: volapilogin

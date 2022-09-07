@@ -36,7 +36,8 @@ users = Table(
     Column('pagWeb', String(255), nullable=True),
     Column('data', JSON, nullable=True),
     Column('codetmp', Integer, nullable=True),
-    Column('block', Boolean, nullable=True)
+    Column('block', Boolean, nullable=True),
+    Column('developer', Boolean, nullable=True)
 )
 
 
@@ -47,5 +48,17 @@ keys = Table(
     Column('appConnect', String(255), nullable=False),
     Column('keyID', Integer, nullable=False)
 )
+
+
+apiKey = Table(
+    'apiKey', meta,
+    Column('id', Integer, primary_key=True, unique=True, autoincrement=True),
+    Column('globalUser', String(), nullable=False),
+    Column('CLIENT_KEY', String(), nullable=False),
+    Column('CLIENT_SECRET', String(), nullable=False),
+    Column('baseUrl', String(), nullable=True),
+    Column('permissions', String(100), nullable=False)
+)
+
 
 meta.create_all(engine)  # Creando todo, las tablas, funciones, etc

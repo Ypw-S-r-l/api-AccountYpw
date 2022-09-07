@@ -1,6 +1,7 @@
 import re, secrets, bcrypt, base64, hashlib, random, warnings
 from starlette.status import *
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, Depends, HTTPException
+from fastapi.security import HTTPBasicCredentials
 from bs4 import BeautifulSoup
 from sqlalchemy import text
 from Models.index import users, keys
@@ -9,15 +10,17 @@ from datetime import datetime
 from cryptography.fernet import Fernet
 from Database.conexion import engine
 from config.methods import *
+from config.regexp import *
+from config.authentication import security, get_current_username
 
-user = APIRouter()
-version = APIversion()
+
+user = APIRouter(prefix=f"/api/{version[0]}/account")
 
 
 # --------- ruta: root ---------
 @user.get('/', tags=["Welcome"])
 async def root():
-    return responseModelError2X(status.HTTP_200_OK, False, "Bienvenid@ a APILogin YPW", None)
+    return responseModelErrorX(status.HTTP_200_OK, False, "Bienvenid@ a APILogin YPW", None)
 
 
 # Y comprobamos si los inputs estan vacios
@@ -53,37 +56,6 @@ def encrytPassw(passw):
     return passwd
 
 
-# VALIDANDO EMAIL: expresiones regulares
-def es_correo_valido(correo):
-    expresion_regular = r"^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$"
-    return re.match(expresion_regular, correo) is not None
-
-# VALIDANDO PHONE: expresiones regulares
-def es_telefono_valido(phone):
-    expresion_regular = r"^[+]?(\d{1,4})?\s?-?[.]?[(]?\d{3}[)]?\s?-?[.]?\d{3}\s?-?[.]?\d{4}$"
-    return re.match(expresion_regular, phone) is not None
-
-# VALIDANDO USERNAME: expresiones regulares
-def es_usuario_valido(username):
-    expresion_regular = r"^[a-zA-Z0-9@]+[._a-zA-Z0-9@]{3,34}$"
-    return re.match(expresion_regular, username) is not None
-
-# VALIDANDO PASSWORD: expresiones regulares
-def es_password_valido(password):
-    expresion_regular = r"^\S(.|\s){7,200}$"
-    return re.match(expresion_regular, password) is not None
-
-# VALIDANDO NAME: expresiones regulares
-def es_nombre_valido(name):
-    expresion_regular = r"^([a-zA-Záéíóúñ]{2,40}\s?){1,5}$"
-    return re.match(expresion_regular, name) is not None
-
-# VALIDANDO CODE: expresiones regulares
-def es_code_valido(code):
-    expresion_regular = r"^\d{6}$"
-    return re.match(expresion_regular, code) is not None
-
-
 # Generador de token/keyUser.
 def generarToken():
     payload = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
@@ -98,7 +70,7 @@ def generarCode():
 
 
 # --------- ruta: OBTENER USUARIO --------
-@user.post(f'/api/{version[0]}/account/getUser', status_code=200, response_model=UserObtener, tags=['Usuario'])
+@user.post('/getUser', status_code=200, response_model=UserObtener, tags=['Usuario'])
 async def obtenerUsuario(user: UserObtener):
 
     appConnect = user.appConnect.strip()
@@ -135,15 +107,15 @@ async def obtenerUsuario(user: UserObtener):
             finally:
                 conn.close()
 
-            return responseModelError2X(status.HTTP_200_OK, False, "Usuario existente", response)
+            return responseModelErrorX(status.HTTP_200_OK, False, "Usuario existente", response)
         else:
-            return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "Usuario no existente", None)
+            return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "Usuario no existente", None)
     else:
-        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 
 # ********* ruta: REGISTRAR USUARIO *********
-@user.post(f'/api/{version[0]}/account/register', status_code=200, response_model=UserRegistro, tags=['Usuario'])
+@user.post('/register', status_code=200, response_model=UserRegistro, tags=['Usuario'])
 async def registrar(user: UserRegistro):
 
     # Obtenemos el correo introducido por el usuario y lo pasa por validador de Email
@@ -209,31 +181,31 @@ async def registrar(user: UserRegistro):
 
                                 return verEnvioEmail(email, codeTMP, header, body, support, footer, "CÓDIGO DE ACTIVACIÓN DE CUENTA", "Se te ha enviado un código a este correo para que actives tu cuenta.", "Usuario agregado correctamente.", "No se pudo enviar a su correo el código de activación de su cuenta.")
                             else:
-                                return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "El usuario que intenta registrar ya existe.", None)
+                                return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "El usuario que intenta registrar ya existe.", None)
                         else:
-                            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "La contraseña no cumple con los requisitos.", None)
+                            return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "La contraseña no cumple con los requisitos.", None)
                     else:
-                        return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Número de teléfono inválido.", None)
+                        return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "Número de teléfono inválido.", None)
                 else:
-                    return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico inválido.", None)
+                    return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico inválido.", None)
             else:
-                return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Nombre de usuario inválido.", None)
+                return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "Nombre de usuario inválido.", None)
         else:
-            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "El nombre no cumple con los requisitos.", None)
+            return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "El nombre no cumple con los requisitos.", None)
     else:
-        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 
 # ********* ruta: LOGIN *********
-@user.post(f'/api/{version[0]}/account/login', status_code=200, response_model=UserLogin, tags=["Usuario"])
+@user.post('/login', status_code=200, response_model=UserLogin, tags=["Usuario"])
 async def login(login: UserLogin):
 
     # Validando que la connection sea True
     def is_empty(con):
         if con:
-            return responseModelError2X(status.HTTP_200_OK, False, "Inicio de seccion correctamente.", {"keyUser": token})
+            return responseModelErrorX(status.HTTP_200_OK, False, "Inicio de seccion correctamente.", {"keyUser": token})
         else:
-            return responseModelError4X(status.HTTP_404_NOT_FOUND, False, "Usuario no encontrado", None)
+            return responseModelErrorX(status.HTTP_404_NOT_FOUND, False, "Usuario no encontrado", None)
 
     # CAMPO: uceCampo: username, telefono, email
     username = login.username.strip()
@@ -291,7 +263,7 @@ async def login(login: UserLogin):
             finally:
                 conn.close()
         else:
-            return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "No se pudo completar la operación porque hubo un error en la validación.", None)
+            return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "No se pudo completar la operación porque hubo un error en la validación.", None)
 
         if output != None:
             # Almacenamos el userID del usuario en 'userIDK'
@@ -312,15 +284,15 @@ async def login(login: UserLogin):
 
                 return is_empty(conx)
             except:
-                return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "No se pudo ejecutar la peticion.", None)
+                return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "No se pudo ejecutar la peticion.", None)
         else:
-            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Username y/o Password inválido/s", None)
+            return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "Username y/o Password inválido/s", None)
     else:
-        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 
 # ********* ruta: CERRAR SECCION *********
-@user.post(f'/api/{version[0]}/account/logout', status_code=200, response_model=UserLogout, tags=['Usuario'])
+@user.post('/logout', status_code=200, response_model=UserLogout, tags=['Usuario'])
 async def logout(user: UserLogout):
 
     appConnect = user.appConnect.strip()
@@ -354,23 +326,23 @@ async def logout(user: UserLogout):
             finally:
                 conn.close()
 
-            return responseModelError2X(status.HTTP_200_OK, False, "Seccion cerrada correctamente.", None)
+            return responseModelErrorX(status.HTTP_200_OK, False, "Seccion cerrada correctamente.", None)
         else:
-            return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "La seccion no existe.", None)
+            return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "La seccion no existe.", None)
     else:
-        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 
 # ********* ruta: OBTENER TODAS LAS APPS DEL USUARIO *********
-@user.post(f'/api/{version[0]}/account/getSections', status_code=200, response_model=UserSeccion, tags=['Usuario'])
+@user.post('/getSections', status_code=200, response_model=UserSeccion, tags=['Usuario'])
 async def getSections(user: UserSeccion):
 
     # Validando que la connection sea True
     def is_empty(con):
         if con:
-            return responseModelError2X(status.HTTP_200_OK, False, "Apps conectadas a ypwLogin", conx)
+            return responseModelErrorX(status.HTTP_200_OK, False, "Apps conectadas a ypwLogin", conx)
         else:
-            return responseModelError2X(status.HTTP_404_NOT_FOUND, False, "No existen apps conectadas a este usuario.", None)
+            return responseModelErrorX(status.HTTP_404_NOT_FOUND, False, "No existen apps conectadas a este usuario.", None)
 
     appConnect = user.appConnect.strip()
     appConnect = BeautifulSoup(appConnect, features='html.parser').text
@@ -407,15 +379,15 @@ async def getSections(user: UserSeccion):
 
                 return is_empty(conx)
             except:
-                return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "No se pudo ejecutar la peticion.", None)
+                return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "No se pudo ejecutar la peticion.", None)
         else:
-            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "keyUser y/o appConnect inválido/s", None)
+            return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "keyUser y/o appConnect inválido/s", None)
     else:
-        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 
 # ********* ruta: CAMBIAR CONTRASEÑA DEL USUARIO *********
-@user.post(f'/api/{version[0]}/account/changePassword', status_code=200, response_model=ChangePassw, tags=['Usuario'])
+@user.post('/changePassword', status_code=200, response_model=ChangePassw, tags=['Usuario'])
 async def changePassword(user: ChangePassw):
 
     appConnect = user.appConnect.strip()
@@ -466,21 +438,21 @@ async def changePassword(user: ChangePassw):
                 finally:
                     conn.close()
 
-                return responseModelError2X(status.HTTP_200_OK, False, {
+                return responseModelErrorX(status.HTTP_200_OK, False, {
                     "m1:": "La contraseña ha sido actualizada exitosamente.",
                     "m2:": "Todas las secciones se han eliminado."
                 }, None)
             else:
-                return responseModelError2X(status.HTTP_200_OK, False, "La contraseña ha sido actualizada exitosamente.", None)
+                return responseModelErrorX(status.HTTP_200_OK, False, "La contraseña ha sido actualizada exitosamente.", None)
         else:
-            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Username y/o Password inválido/s.", None)
+            return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "Username y/o Password inválido/s.", None)
     else:
-        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 # --------- ruta: ENVIO DE CODIGO A EMAIL --------
 
 
-@user.post(f'/api/{version[0]}/account/setCode/email', status_code=201, response_model=SetCode, tags=['Usuario'])
+@user.post('/setCode/email', status_code=201, response_model=SetCode, tags=['Usuario'])
 async def enviarPassCodeEmail(user: SetCode):
 
     # >> Elimina fallas de la libreria: BeautifulSoup
@@ -488,7 +460,7 @@ async def enviarPassCodeEmail(user: SetCode):
 
     email = user.email.strip()
     email = BeautifulSoup(email, features='html.parser').text
-
+    
     header = user.header.strip()
     header = BeautifulSoup(header, features='html.parser').text
 
@@ -528,9 +500,10 @@ async def enviarPassCodeEmail(user: SetCode):
                             codetmp=codeTMP).where(users.c.email == email))
                 finally:
                     conn.close()
+                
 
                 if verificarVacio(arrayEmail) == False:
-                    return verEnvioEmail(email, codeTMP, header, body, support, footer)
+                    return verEnvioEmail(email, codeTMP, header, body, support, footer, "Recuperación de contraseña", "Se te ha enviado un código como respuesta a tu peticion de recuperacion de contraseña.", "Correo enviado exitosamente.", "El correo no se pudo enviar.")
                 else:
                     header = "YPW"
                     body = "Su codigo de recuperacion es:"
@@ -539,15 +512,15 @@ async def enviarPassCodeEmail(user: SetCode):
                     
                     return verEnvioEmail(email, codeTMP, header, body, support, footer, "Recuperación de contraseña", "Se te ha enviado un código como respuesta a tu peticion de recuperacion de contraseña.", "Correo enviado exitosamente.", "El correo no se pudo enviar.")
             else:
-                return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "Correo electrónico no encontrado.", None)
+                return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "Correo electrónico no encontrado.", None)
         else:
-            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico inválido.", None)
+            return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico inválido.", None)
     else:
-        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 
 # --------- ruta: OBTENER USUARIO --------
-@user.post(f'/api/{version[0]}/account/changePasswCode/email', status_code=200, response_model=RecoveryPassCode, tags=['Usuario'])
+@user.post('/changePasswCode/email', status_code=200, response_model=RecoveryPassCode, tags=['Usuario'])
 async def cambiarPassCodeEmail(user: RecoveryPassCode):
 
     email = user.email.strip()
@@ -595,21 +568,21 @@ async def cambiarPassCodeEmail(user: RecoveryPassCode):
                         finally:
                             conn.close()
 
-                        return responseModelError2X(status.HTTP_200_OK, False, "Contraseña ha sido restablecida exitosamente.", None)
+                        return responseModelErrorX(status.HTTP_200_OK, False, "Contraseña ha sido restablecida exitosamente.", None)
                     else:
-                        return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Código inválido.", None)
+                        return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "Código inválido.", None)
                 else:
-                    return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "El código introducido no cumple con los requisitos.", None)
+                    return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "El código introducido no cumple con los requisitos.", None)
             else:
-                return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico inválido.", None)
+                return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico inválido.", None)
         else:
-            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Contraseña inválida. No cumple con los requisitos.", None)
+            return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "Contraseña inválida. No cumple con los requisitos.", None)
     else:
-        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 """
 #********* ruta: ACTUALIZAR *********
-@user.patch("/api/v1/account/updateUser", status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
+@user.patch("/updateUser", status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
 async def actualizarUsuario(user: UserUpdate):
     
     appConnect= user.appConnect.strip()
@@ -697,7 +670,7 @@ async def actualizarUsuario(user: UserUpdate):
 """
 
 # ********* ruta: ACTUALIZAR *********
-@user.put(f'/api/{version[0]}/account/updateDataUser', status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
+@user.put('/updateDataUser', status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
 async def actualizarDatos(user: UserUpdateOpcional):
 
     appConnect = user.appConnect.strip()
@@ -769,17 +742,17 @@ async def actualizarDatos(user: UserUpdateOpcional):
                 finally:
                     conn.close()
 
-                return responseModelError2X(status.HTTP_200_OK, False, "Datos actualizados exitosamente.", None)
+                return responseModelErrorX(status.HTTP_200_OK, False, "Datos actualizados exitosamente.", None)
             else:
-                return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "No se encontró la seccion.", None)
+                return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "No se encontró la seccion.", None)
         else:
-            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "El nombre no cumple con los requisitos.", None)
+            return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "El nombre no cumple con los requisitos.", None)
     else:
-        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 
 # ********* ruta: ACTUALIZAR *********
-@user.put(f'/api/{version[0]}/account/updateFieldData', status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
+@user.put('/updateFieldData', status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
 async def actualizarCampoData(user: UpdateFieldData):
 
     appConnect = user.appConnect.strip()
@@ -814,17 +787,17 @@ async def actualizarCampoData(user: UpdateFieldData):
                 finally:
                     conn.close()
 
-                return responseModelError2X(status.HTTP_200_OK, False, "Datos actualizados exitosamente.", None)
+                return responseModelErrorX(status.HTTP_200_OK, False, "Datos actualizados exitosamente.", None)
             else:
-                return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "No se enviaron datos para actualizar.", None)
+                return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "No se enviaron datos para actualizar.", None)
         else:
-            return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "No se encontró la seccion.", None)
+            return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "No se encontró la seccion.", None)
     else:
-        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 
 
 # ********* ruta: INSERTAR CODIGO PARA VERIFICACION DE USUARIO *********
-@user.post(f'/api/{version[0]}/account/activateAccount/email', status_code=200, response_model=setCodeActivationEmail, tags=['Usuario'])
+@user.post('/activateAccount/email', status_code=200, response_model=setCodeActivationEmail, tags=['Usuario'])
 async def activateAccount(user: setCodeActivationEmail):
 
     email = user.email.strip()
@@ -864,14 +837,42 @@ async def activateAccount(user: setCodeActivationEmail):
                         finally:
                             conn.close()
 
-                        return responseModelError2X(status.HTTP_200_OK, False, "Usuario verificado exitosamente.", None)
+                        return responseModelErrorX(status.HTTP_200_OK, False, "Usuario verificado exitosamente.", None)
                     else:
-                        return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "No es necesaria la activación de este usuario. Esta cuenta ha sido ya verificada anteriormente.", None)
+                        return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "No es necesaria la activación de este usuario. Esta cuenta ha sido ya verificada anteriormente.", None)
                 else:
-                    return responseModelError4X(status.HTTP_404_NOT_FOUND, True, "Usuario no encontrado.", None)
+                    return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "Usuario no encontrado.", None)
             else:
-                return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "El código introducido no cumple con los requisitos.", None)
+                return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "El código introducido no cumple con los requisitos.", None)
         else:
-            return responseModelError4X(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico inválido.", None)
+            return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico inválido.", None)
     else:
-        return responseModelError4X(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+
+
+# ********* ruta: INSERTAR CODIGO PARA VERIFICACION DE USUARIO *********
+@user.post('/uploadImageProfile', status_code=200, response_model=uploadImageProfile, tags=['Usuario'])
+async def subirImagenPerfil(img: uploadImageProfile):
+    
+    try:
+        username= img.username.strip()
+        username= BeautifulSoup(username, features='html.parser').text
+        
+        imagenBytes= img.imagenPerfil
+        
+        #>> inserta la imagen del producto en la carpeta data/profile
+        await bytesToImage(imagenBytes, username)
+        
+        return responseModelErrorX(status.HTTP_200_OK, False, "Imagen de Perfil guardada exitosamente.", None)
+    except:
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "No se pudo subir la imagen.", None)
+
+
+#>> metodo para autenticar el usuario developer
+"""
+@user.get('/developer/me', status_code=200, tags=['Usuario'])
+async def readME(permiso: str = Depends(get_current_username)):
+    
+    return responseModelErrorX(status.HTTP_200_OK, False, "Usuario confirmado.", None)
+"""
+    

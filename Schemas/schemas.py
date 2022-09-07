@@ -3,6 +3,8 @@ from pydantic import BaseModel, Field
 from typing import *
 from typing import TypedDict
 from bs4 import BeautifulSoup
+from fastapi.security import HTTPBasicCredentials
+
 
 def stripTarget(cadena):
     tex = BeautifulSoup(cadena, features='html.parser').text
@@ -103,3 +105,7 @@ class UpdateFieldData(BaseModel):
 class setCodeActivationEmail(BaseModel):
     email: str
     codetmp: int
+
+class uploadImageProfile(BaseModel):
+    username: str
+    imagenPerfil: bytes
