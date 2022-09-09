@@ -174,7 +174,7 @@ async def registrar(user: UserRegistro):
 
                             if output == 1:
                                 
-                                header = "YPW"
+                                header = "SUPPORT"
                                 body = "CÓDIGO"
                                 support = "https://ypw.com.do/#about"
                                 footer = "2022 © YPW S.R.L"
@@ -837,9 +837,9 @@ async def activateAccount(user: setCodeActivationEmail):
                         finally:
                             conn.close()
 
-                        return responseModelErrorX(status.HTTP_200_OK, False, "Usuario verificado exitosamente.", None)
+                        return responseModelErrorX(status.HTTP_200_OK, False, "Usuario verificado exitosamente.", {"appConnect": "default", "keyUser": token})
                     else:
-                        return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "No es necesaria la activación de este usuario. Esta cuenta ha sido ya verificada anteriormente.", None)
+                        return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "Código inválido, o esta cuenta ya ha sido verificada anteriormente.", None)
                 else:
                     return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "Usuario no encontrado.", None)
             else:
