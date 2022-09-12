@@ -10,7 +10,7 @@ from Database.conexion import engine
 
 # Metodos de control de versiones
 def APIversion():
-    verApi = ("v1", "v1.4.3")
+    verApi = ("v1", "v1.4.4")
     return verApi
 
 version = APIversion()

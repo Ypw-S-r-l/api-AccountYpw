@@ -82,16 +82,16 @@ class RecoveryPassCode(BaseModel):
 class UserUpdateOpcional(BaseModel):
     appConnect: str
     keyUser: str
-    name: Optional[str]= ""
-    dateOfBirth: Optional[str]= ""
-    language: Optional[str]= ""
-    country: Optional[str]= ""
-    shippingAddress: Optional[dict] #JSON
-    identificationCard: Optional[str]= ""
-    accountVersion: Optional[str]= ""
-    timeZone: Optional[str]= ""
-    accountType: Optional[str]= ""
-    pagWeb: Optional[str]= ""
+    name: Optional[str]= None
+    dateOfBirth: Optional[str]= None
+    language: Optional[str]= None
+    country: Optional[str]= None
+    shippingAddress: Optional[dict]= None #JSON
+    identificationCard: Optional[str]= None
+    accountVersion: Optional[str]= None
+    timeZone: Optional[str]= None
+    accountType: Optional[str]= None
+    pagWeb: Optional[str]= None
 
     class Config:
         arbitrary_types_allowed = True
@@ -109,3 +109,4 @@ class setCodeActivationEmail(BaseModel):
 class uploadImageProfile(BaseModel):
     username: str
     imagenPerfil: bytes
+    
