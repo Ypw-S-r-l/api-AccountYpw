@@ -79,21 +79,28 @@ class RecoveryPassCode(BaseModel):
 
 
 #***** MODELO CLIENTE: actualizar datos secundarios *****
-class UserUpdateOpcional(BaseModel):
+class UPOvalidacion(BaseModel):
     appConnect: str
     keyUser: str
-    name: Optional[str]= None
-    dateOfBirth: Optional[str]= None
-    language: Optional[str]= None
-    country: Optional[str]= None
-    shippingAddress: Optional[dict]= None #JSON
-    identificationCard: Optional[str]= None
-    accountVersion: Optional[str]= None
-    timeZone: Optional[str]= None
-    accountType: Optional[str]= None
-    pagWeb: Optional[str]= None
+    
+    class Config:
+        orm_mode = True
+        arbitrary_types_allowed = True
+    
+class UserUpdateOpcional(UPOvalidacion):
+    name: Optional[str]= ""
+    dateOfBirth: Optional[str]= ""
+    language: Optional[str]= ""
+    country: Optional[str]= ""
+    shippingAddress: Optional[dict]= "" #JSON
+    identificationCard: Optional[str]= ""
+    accountVersion: Optional[str]= ""
+    timeZone: Optional[str]= ""
+    accountType: Optional[str]= ""
+    pagWeb: Optional[str]= ""
 
     class Config:
+        orm_mode = True
         arbitrary_types_allowed = True
 
 

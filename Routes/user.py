@@ -1,3 +1,4 @@
+from json import JSONEncoder
 import re, secrets, bcrypt, base64, hashlib, random, warnings
 from starlette.status import *
 from fastapi import APIRouter, status, Depends, HTTPException
@@ -67,7 +68,6 @@ def generarToken():
 def generarCode():
     codetmp = random.randint(100000, 999999)
     return codetmp
-
 
 # --------- ruta: OBTENER USUARIO --------
 @user.post('/getUser', status_code=200, response_model=UserObtener, tags=['Usuario'])
@@ -484,7 +484,7 @@ async def enviarPassCodeEmail(user: SetCode):
 
             try:
                 with engine.connect() as conn:
-                    sql = text("select email from users where email=:email")
+                    sql = text("select email from users where email=:email and block=0")
                     output = conn.execute(sql, email=email).first()
             finally:
                 conn.close()
@@ -496,11 +496,10 @@ async def enviarPassCodeEmail(user: SetCode):
 
                 try:
                     with engine.connect() as conn:
-                        conn.execute(users.update().values(
-                            codetmp=codeTMP).where(users.c.email == email))
+                        conn.execute(users.update().values(codetmp=codeTMP).where(users.c.email == email))
                 finally:
                     conn.close()
-                
+                    
 
                 if verificarVacio(arrayEmail) == False:
                     return verEnvioEmail(email, codeTMP, header, body, support, footer, "Recuperación de contraseña", "Se te ha enviado un código como respuesta a tu peticion de recuperacion de contraseña.", "Correo enviado exitosamente.", "El correo no se pudo enviar.")
@@ -509,7 +508,7 @@ async def enviarPassCodeEmail(user: SetCode):
                     body = "Su codigo de recuperacion es:"
                     support = "https://ypw.com.do/#about"
                     footer = "2022 © YPW S.R.L"
-                    
+                        
                     return verEnvioEmail(email, codeTMP, header, body, support, footer, "Recuperación de contraseña", "Se te ha enviado un código como respuesta a tu peticion de recuperacion de contraseña.", "Correo enviado exitosamente.", "El correo no se pudo enviar.")
             else:
                 return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "Correo electrónico no encontrado.", None)
@@ -559,7 +558,7 @@ async def cambiarPassCodeEmail(user: RecoveryPassCode):
                     if output != None:
                         try:
                             with engine.connect() as conn:
-                                conn.execute(users.update().values(password=newPassw, codetmp=None).where(
+                                conn.execute(users.update().values(password=newPassw, codetmp=None, block=0).where(
                                     users.c.codetmp == codetmp, users.c.email == email))
                                 
                                 #>> se eliminan todas las keys/secciones del usuario
@@ -669,10 +668,11 @@ async def actualizarUsuario(user: UserUpdate):
         }
 """
 
-# ********* ruta: ACTUALIZAR *********
-@user.put('/updateDataUser', status_code=200, response_model_exclude_unset=True, tags=["Usuario"])
-async def actualizarDatos(user: UserUpdateOpcional):
 
+# ********* ruta: ACTUALIZAR *********
+@user.put('/updateDataUser', status_code=200, response_model=UserUpdateOpcional, response_model_exclude_unset=True, tags=["Usuario"])
+async def actualizarDatos(user: UserUpdateOpcional):
+        
     appConnect = user.appConnect.strip()
     appConnect = BeautifulSoup(appConnect, features='html.parser').text
 
@@ -681,8 +681,8 @@ async def actualizarDatos(user: UserUpdateOpcional):
 
     name = user.name.strip()
     name = BeautifulSoup(name, features='html.parser').text
-
-    dateOfBirth = user.dateOfBirth
+    
+    dateOfBirth= user.dateOfBirth
     dateOfBirth = str(dateOfBirth).strip()
     dateOfBirth = BeautifulSoup(dateOfBirth, features='html.parser').text
 
@@ -722,31 +722,50 @@ async def actualizarDatos(user: UserUpdateOpcional):
 
     if verificarVacio(array) == False:
        
-        if es_nombre_valido(name) == True:
-            # Consultamos a la base de datos para obtener el userID del usuario
-            try:
-                with engine.connect() as conn:
-                    vlogin = conn.execute(keys.select(keys.c.userID).where(
-                        keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
-            finally:
-                conn.close()
+        # Consultamos a la base de datos para obtener el userID del usuario
+        try:
+            with engine.connect() as conn:
+                vlogin = conn.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+        finally:
+            conn.close()
 
-            if vlogin != None:
-
-                userID = vlogin[0]
-
-                try:
-                    with engine.connect() as conn:
-                        conn.execute(users.update().values(name=name, dateOfBirth=dateOfBirth, language=language, country=country, shippingAddress=shippingAddress,
-                                    identificationCard=identificationCard, accountVersion=accountVersion, timeZone=timeZone, accountType=accountType, pagWeb=pagWeb).where(users.c.userID == userID))
-                finally:
-                    conn.close()
-
-                return responseModelErrorX(status.HTTP_200_OK, False, "Datos actualizados exitosamente.", None)
-            else:
-                return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "No se encontró la seccion.", None)
+        if vlogin != None:    
+            #>> Tenemos el usuario: IMPORTANTE!
+            userID = vlogin[0]
+                
+            if es_nombre_valido(name) == True:
+                return await updateDataUser("name", name, userID)
+            
+            if dateOfBirth:
+                return await updateDataUser("dateOfBirth", dateOfBirth, userID)
+            
+            if language:
+                return await updateDataUser("language", language, userID)
+            
+            if country:
+                return await updateDataUser("country", country, userID)
+            
+            if shippingAddress:
+                return await updateDataUser("shippingAddress", shippingAddress, userID)
+            
+            if identificationCard:
+                return await updateDataUser("identificationCard", identificationCard, userID)
+            
+            if accountVersion:
+                return await updateDataUser("accountVersion", accountVersion, userID)
+            
+            if timeZone:
+                return await updateDataUser("timeZone", timeZone, userID)
+            
+            if accountType:
+                return await updateDataUser("accountType", accountType, userID)
+            
+            if pagWeb:
+                return await updateDataUser("pagWeb", pagWeb, userID)
+            
+            return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "El dato que quiere actualizar no es correcto.", None)
         else:
-            return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "El nombre no cumple con los requisitos.", None)
+            return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "No se encontró la seccion.", None)
     else:
         return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
 

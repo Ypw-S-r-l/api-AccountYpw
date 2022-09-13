@@ -1,5 +1,4 @@
 import base64
-from typing import Optional
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi import status
@@ -10,7 +9,7 @@ from Database.conexion import engine
 
 # Metodos de control de versiones
 def APIversion():
-    verApi = ("v1", "v1.4.4")
+    verApi = ("v1", "v1.4.5")
     return verApi
 
 version = APIversion()
@@ -90,3 +89,17 @@ async def bytesToImage(imagen: bytes, username: str):
             file.write(img)
     finally:
         file.close()
+
+
+#>> consulta para actualizar datos del usuario
+async def updateDataUser(campo, dato, userID):
+    try:
+        with engine.connect() as conn:
+            sql= text(f"update users set {campo}=:dato where userID=:userID")
+            conn.execute(sql, dato=dato, userID=userID)
+            conn.connection.commit()
+        return responseModelErrorX(status.HTTP_200_OK, False, "Datos actualizados exitosamente.", None)
+    except:
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "No se pudo realizar la peticion.", None)
+    finally:
+        conn.close()
