@@ -3,7 +3,7 @@ services:
     app:
         build: .
         volumes:
-            - volapilogin:\data\profile
+            - /data/profile:/data/profile
         container_name: apilogin
         command: uvicorn app.main:app --proxy-headers --host 0.0.0.0 --port 8000
         ports:

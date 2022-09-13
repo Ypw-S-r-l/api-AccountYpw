@@ -6,7 +6,7 @@ def enviarEmail(destino, code, header, body, support, footer, titulo, asunto):
     
     msg = EmailMessage()
     msg['Subject'] = titulo
-    msg['From'] = "app@ypw.com.do"
+    msg['From'] = "notificacion@suport.com.do"
     msg['To'] = destino
     
     msg.set_content(asunto)
@@ -37,6 +37,6 @@ def enviarEmail(destino, code, header, body, support, footer, titulo, asunto):
     </html>
     """, subtype='html')
 
-    with smtplib.SMTP_SSL('mail.privateemail.com', 465) as smtp:
-        smtp.login('app@ypw.com.do', 'Y@lfry@@7991')
+    with smtplib.SMTP_SSL('mail.suport.com.do', 465) as smtp:
+        smtp.login('notificacion@suport.com.do', "r%bg$&El$gR,")
         smtp.send_message(msg)

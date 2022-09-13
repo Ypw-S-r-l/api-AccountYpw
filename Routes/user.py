@@ -1,4 +1,3 @@
-from json import JSONEncoder
 import re, secrets, bcrypt, base64, hashlib, random, warnings
 from starlette.status import *
 from fastapi import APIRouter, status, Depends, HTTPException
@@ -14,15 +13,12 @@ from config.methods import *
 from config.regexp import *
 from config.authentication import security, get_current_username
 
-
 user = APIRouter(prefix=f"/api/{version[0]}/account")
-
 
 # --------- ruta: root ---------
 @user.get('/', tags=["Welcome"])
 async def root():
     return responseModelErrorX(status.HTTP_200_OK, False, "Bienvenid@ a APILogin YPW", None)
-
 
 # Y comprobamos si los inputs estan vacios
 def verificarVacio(x):
@@ -95,15 +91,15 @@ async def obtenerUsuario(user: UserObtener):
 
         # Verificamos si ha capturado datos.
         if verDatos != None:
-
             # Almacenamos en userID el userID del usuario
             userID = verDatos[0]
-
             try:
                 # Comprobamos si el userID de las tablas hacen match para obtener todos los datos del usuario
                 with engine.connect() as conn:
-                    response = conn.execute(users.select().where(
-                        users.c.userID == userID)).first()
+                    #response = conn.execute(users.select().where(users.c.userID == userID)).first()
+                    
+                    sql= text("select userID, username, name, email, phone, dateOfBirth, language, country, ypwCashBalance, shippingAddress, registrationDate, identificationCard, accountUpdateDate, accountVersion, timeZone, recoveryCode, applications, limitations, accountType, tradingExits, pendingInvoices, bills, subscriptions, metodoPago, servidorDB, userDB, puertoDB, pagWeb, block, developer from users where userID=:userID")
+                    response= conn.execute(sql, userID=userID).first()
             finally:
                 conn.close()
 
@@ -176,8 +172,8 @@ async def registrar(user: UserRegistro):
                                 
                                 header = "SUPPORT"
                                 body = "CÓDIGO"
-                                support = "https://ypw.com.do/#about"
-                                footer = "2022 © YPW S.R.L"
+                                support = "https://suport.com.do"
+                                footer = "2022 © SUPPORT"
 
                                 return verEnvioEmail(email, codeTMP, header, body, support, footer, "CÓDIGO DE ACTIVACIÓN DE CUENTA", "Se te ha enviado un código a este correo para que actives tu cuenta.", "Usuario agregado correctamente.", "No se pudo enviar a su correo el código de activación de su cuenta.")
                             else:
@@ -484,7 +480,7 @@ async def enviarPassCodeEmail(user: SetCode):
 
             try:
                 with engine.connect() as conn:
-                    sql = text("select email from users where email=:email and block=0")
+                    sql = text("select email from users where email=:email")
                     output = conn.execute(sql, email=email).first()
             finally:
                 conn.close()
@@ -504,10 +500,10 @@ async def enviarPassCodeEmail(user: SetCode):
                 if verificarVacio(arrayEmail) == False:
                     return verEnvioEmail(email, codeTMP, header, body, support, footer, "Recuperación de contraseña", "Se te ha enviado un código como respuesta a tu peticion de recuperacion de contraseña.", "Correo enviado exitosamente.", "El correo no se pudo enviar.")
                 else:
-                    header = "YPW"
+                    header = "SUPPORT"
                     body = "Su codigo de recuperacion es:"
-                    support = "https://ypw.com.do/#about"
-                    footer = "2022 © YPW S.R.L"
+                    support = "https://suport.com.do"
+                    footer = "2022 © SUPPORT"
                         
                     return verEnvioEmail(email, codeTMP, header, body, support, footer, "Recuperación de contraseña", "Se te ha enviado un código como respuesta a tu peticion de recuperacion de contraseña.", "Correo enviado exitosamente.", "El correo no se pudo enviar.")
             else:
