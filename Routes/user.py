@@ -98,7 +98,7 @@ async def obtenerUsuario(user: UserObtener):
                 with engine.connect() as conn:
                     #response = conn.execute(users.select().where(users.c.userID == userID)).first()
                     
-                    sql= text("select userID, username, name, email, phone, dateOfBirth, language, country, ypwCashBalance, shippingAddress, registrationDate, identificationCard, accountUpdateDate, accountVersion, timeZone, recoveryCode, applications, limitations, accountType, tradingExits, pendingInvoices, bills, subscriptions, metodoPago, servidorDB, userDB, puertoDB, pagWeb, block, developer from users where userID=:userID")
+                    sql= text("select userID, username, name, email, phone, dateOfBirth, language, country, ypwCashBalance, shippingAddress, registrationDate, identificationCard, accountUpdateDate, accountVersion, timeZone, recoveryCode, applications, limitations, accountType, tradingExits, pendingInvoices, bills, subscriptions, metodoPago, servidorDB, userDB, puertoDB, pagWeb, data, block, developer from users where userID=:userID")
                     response= conn.execute(sql, userID=userID).first()
             finally:
                 conn.close()
@@ -678,6 +678,9 @@ async def actualizarDatos(user: UserUpdateOpcional):
     name = user.name.strip()
     name = BeautifulSoup(name, features='html.parser').text
     
+    phone = user.phone.strip()
+    phone = BeautifulSoup(phone, features='html.parser').text
+    
     dateOfBirth= user.dateOfBirth
     dateOfBirth = str(dateOfBirth).strip()
     dateOfBirth = BeautifulSoup(dateOfBirth, features='html.parser').text
@@ -725,41 +728,59 @@ async def actualizarDatos(user: UserUpdateOpcional):
         finally:
             conn.close()
 
-        if vlogin != None:    
+        if vlogin != None:
             #>> Tenemos el usuario: IMPORTANTE!
             userID = vlogin[0]
+            
+            try:
+                #status= []
+                if es_nombre_valido(name) == True:
+                    await updateDataUser("name", name, userID)
+                    #status.append(name)
                 
-            if es_nombre_valido(name) == True:
-                return await updateDataUser("name", name, userID)
-            
-            if dateOfBirth:
-                return await updateDataUser("dateOfBirth", dateOfBirth, userID)
-            
-            if language:
-                return await updateDataUser("language", language, userID)
-            
-            if country:
-                return await updateDataUser("country", country, userID)
-            
-            if shippingAddress:
-                return await updateDataUser("shippingAddress", shippingAddress, userID)
-            
-            if identificationCard:
-                return await updateDataUser("identificationCard", identificationCard, userID)
-            
-            if accountVersion:
-                return await updateDataUser("accountVersion", accountVersion, userID)
-            
-            if timeZone:
-                return await updateDataUser("timeZone", timeZone, userID)
-            
-            if accountType:
-                return await updateDataUser("accountType", accountType, userID)
-            
-            if pagWeb:
-                return await updateDataUser("pagWeb", pagWeb, userID)
-            
-            return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "El dato que quiere actualizar no es correcto.", None)
+                if es_telefono_valido(phone) == True:
+                    await updateDataUser("phone", phone, userID)
+                    #status.append(phone)
+                
+                if dateOfBirth:
+                    await updateDataUser("dateOfBirth", dateOfBirth, userID)
+                    #status.append(dateOfBirth)
+                
+                if language:
+                    await updateDataUser("language", language, userID)
+                    #status.append(language)
+                
+                if country:
+                    await updateDataUser("country", country, userID)
+                    #status.append(country)
+                
+                if shippingAddress:
+                    await updateDataUser("shippingAddress", shippingAddress, userID)
+                    #status.append(shippingAddress)
+                
+                if identificationCard:
+                    await updateDataUser("identificationCard", identificationCard, userID)
+                    #status.append(identificationCard)
+                
+                if accountVersion:
+                    await updateDataUser("accountVersion", accountVersion, userID)
+                    #status.append(accountVersion)
+                
+                if timeZone:
+                    await updateDataUser("timeZone", timeZone, userID)
+                    #status.append(timeZone)
+                
+                if accountType:
+                    await updateDataUser("accountType", accountType, userID)
+                    #status.append(accountType)
+                
+                if pagWeb:
+                    await updateDataUser("pagWeb", pagWeb, userID)
+                    #status.append(pagWeb)
+                
+                return responseModelErrorX(status.HTTP_200_OK, False, "Datos actualizados exitosamente.", None)
+            except:
+                return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "El dato no cumple con las condiciones.", None)
         else:
             return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "No se encontró la seccion.", None)
     else:

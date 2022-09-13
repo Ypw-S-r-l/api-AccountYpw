@@ -89,6 +89,7 @@ class UPOvalidacion(BaseModel):
     
 class UserUpdateOpcional(UPOvalidacion):
     name: Optional[str]= ""
+    phone: Optional[str]= ""
     dateOfBirth: Optional[str]= ""
     language: Optional[str]= ""
     country: Optional[str]= ""

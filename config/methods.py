@@ -9,7 +9,7 @@ from Database.conexion import engine
 
 # Metodos de control de versiones
 def APIversion():
-    verApi = ("v1", "v1.4.6")
+    verApi = ("v1", "v1.4.7")
     return verApi
 
 version = APIversion()
@@ -98,7 +98,6 @@ async def updateDataUser(campo, dato, userID):
             sql= text(f"update users set {campo}=:dato where userID=:userID")
             conn.execute(sql, dato=dato, userID=userID)
             conn.connection.commit()
-        return responseModelErrorX(status.HTTP_200_OK, False, "Datos actualizados exitosamente.", None)
     except:
         return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "No se pudo realizar la peticion.", None)
     finally:
