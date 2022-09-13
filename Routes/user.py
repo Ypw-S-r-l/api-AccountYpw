@@ -96,10 +96,10 @@ async def obtenerUsuario(user: UserObtener):
             try:
                 # Comprobamos si el userID de las tablas hacen match para obtener todos los datos del usuario
                 with engine.connect() as conn:
-                    #response = conn.execute(users.select().where(users.c.userID == userID)).first()
+                    response= conn.execute(users.select().where(users.c.userID == userID)).first()
                     
-                    sql= text("select userID, username, name, email, phone, dateOfBirth, language, country, ypwCashBalance, shippingAddress, registrationDate, identificationCard, accountUpdateDate, accountVersion, timeZone, recoveryCode, applications, limitations, accountType, tradingExits, pendingInvoices, bills, subscriptions, metodoPago, servidorDB, userDB, puertoDB, pagWeb, data, block, developer from users where userID=:userID")
-                    response= conn.execute(sql, userID=userID).first()
+                    #sql= text("select userID, username, name, email, phone, dateOfBirth, language, country, ypwCashBalance, shippingAddress, registrationDate, identificationCard, accountUpdateDate, accountVersion, timeZone, recoveryCode, applications, limitations, accountType, tradingExits, pendingInvoices, bills, subscriptions, metodoPago, servidorDB, userDB, puertoDB, pagWeb, data, block, developer from users where userID=:userID")
+                    #response= conn.execute(sql, userID=userID).first()
             finally:
                 conn.close()
 
