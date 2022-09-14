@@ -782,7 +782,7 @@ async def actualizarDatos(user: UserUpdateOpcional):
                 
                 return responseModelErrorX(status.HTTP_200_OK, False, "Datos actualizados exitosamente.", None)
             except:
-                return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "El dato no cumple con las condiciones.", None)
+                return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "No se pudo realizar la petición.", None)
         else:
             return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "No se encontró la seccion.", None)
     else:
