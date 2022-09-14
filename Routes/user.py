@@ -720,8 +720,7 @@ async def actualizarDatos(user: UserUpdateOpcional):
     array = {"keyUser": keyUser, "appConnect": appConnect}
 
     if verificarVacio(array) == False:
-       
-        # Consultamos a la base de datos para obtener el userID del usuario
+        #>> Consultamos a la base de datos para obtener el userID del usuario
         try:
             with engine.connect() as conn:
                 vlogin = conn.execute(keys.select(keys.c.userID).where(keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
@@ -733,14 +732,17 @@ async def actualizarDatos(user: UserUpdateOpcional):
             userID = vlogin[0]
             
             try:
-                #status= []
-                if es_nombre_valido(name) == True:
-                    await updateDataUser("name", name, userID)
-                    #status.append(name)
+                if name:
+                    if es_nombre_valido(name) == True:
+                        await updateDataUser("name", name, userID)
+                    else:
+                        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "El dato no cumple con las condiciones.", name)
                 
-                if es_telefono_valido(phone) == True:
-                    await updateDataUser("phone", phone, userID)
-                    #status.append(phone)
+                if phone:
+                    if es_telefono_valido(phone) == True:
+                        await updateDataUser("phone", phone, userID)
+                    else:
+                        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "El dato no cumple con las condiciones.", phone)
                 
                 if dateOfBirth:
                     await updateDataUser("dateOfBirth", dateOfBirth, userID)
