@@ -27,7 +27,7 @@ def es_password_valido(password):
 
 #>> VALIDANDO NAME: expresiones regulares
 def es_nombre_valido(name):
-    expresion_regular = r"^([a-zA-Záéíóúñ]{2,40}\s?){1,5}$"
+    expresion_regular = r"^([a-zA-Záéíóúñ. ]{1,40}\s?){1,5}$"
     return re.match(expresion_regular, name) is not None
 
 
