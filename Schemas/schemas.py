@@ -29,12 +29,14 @@ class UserRegistro(BaseModel):
     password: str
     name: str
     email: str
+    numberCode: Optional[int]
     phone: str
 
 
 #***** LOGIN ****** modelo
 class UserLogin(BaseModel):
     username: str
+    numberCode: Optional[int]
     password: str
     appConnect: str
 
@@ -77,7 +79,6 @@ class RecoveryPassCode(BaseModel):
     codetmp: int
     newPassword: str
 
-
 #***** MODELO CLIENTE: actualizar datos secundarios *****
 class UPOvalidacion(BaseModel):
     appConnect: str
@@ -86,9 +87,10 @@ class UPOvalidacion(BaseModel):
     class Config:
         orm_mode = True
         arbitrary_types_allowed = True
-    
+
 class UserUpdateOpcional(UPOvalidacion):
     name: Optional[str]= ""
+    numberCode: Optional[int]
     phone: Optional[str]= ""
     dateOfBirth: Optional[str]= ""
     language: Optional[str]= ""
@@ -104,7 +106,6 @@ class UserUpdateOpcional(UPOvalidacion):
         orm_mode = True
         arbitrary_types_allowed = True
 
-
 class UpdateFieldData(BaseModel):
     appConnect: str
     keyUser: str
@@ -117,4 +118,7 @@ class setCodeActivationEmail(BaseModel):
 class uploadImageProfile(BaseModel):
     username: str
     imagenPerfil: bytes
-    
+
+class DeleteAccount(BaseModel):
+    email: str
+    password: str

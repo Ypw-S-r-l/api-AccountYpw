@@ -37,7 +37,9 @@ users = Table(
     Column('data', JSON, nullable=True),
     Column('codetmp', Integer, nullable=True),
     Column('block', Boolean, nullable=True),
-    Column('developer', Boolean, nullable=True)
+    Column('developer', Boolean, nullable=True),
+    Column('inBlock', Boolean, nullable=True),
+    Column('numberCode', Integer, nullable=True)
 )
 
 

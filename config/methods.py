@@ -9,7 +9,7 @@ from Database.conexion import engine
 
 # Metodos de control de versiones
 def APIversion():
-    verApi = ("v1", "v1.4.8")
+    verApi = ("v1", "v1.4.9")
     return verApi
 
 version = APIversion()
@@ -67,7 +67,7 @@ def autoLogin(email, passw):
 
 
 #>> Verificar el envio del cbodyorreo: capturando errores
-def verEnvioEmail(email, codeTMP, header, body, support, footer, titulo, asunto, resPositiva: str, resNegativa: str):
+async def verEnvioEmail(email, codeTMP, header, body, support, footer, titulo, asunto, resPositiva: str, resNegativa: str):
     if enviarEmail(email, codeTMP, header, body, support, footer, titulo, asunto) == None:
         return responseModelErrorX(status.HTTP_200_OK, False, resPositiva, None)
     else:
@@ -77,7 +77,6 @@ def verEnvioEmail(email, codeTMP, header, body, support, footer, titulo, asunto,
 
 #>> consulta para insertar imagen de los articulos/productos
 async def bytesToImage(imagen: bytes, username: str):
-    
     try:
         #>> decodeamos la imagen (de bytes a img)
         img= base64.decodebytes(imagen)
@@ -98,5 +97,34 @@ async def updateDataUser(campo, dato, userID):
             sql= text(f"update users set {campo}=:dato where userID=:userID")
             conn.execute(sql, dato=dato, userID=userID)
             conn.connection.commit()
+    finally:
+        conn.close()
+
+
+#>> login interno
+async def qIntraLogin(email, passw):
+    try:
+        with engine.connect() as conn:
+            data= conn.execute(users.select().where(users.c.email == email, users.c.password == passw)).first()
+        return data
+    finally:
+        conn.close()
+
+
+#>> eliminar cuenta de usuario
+async def qEliminarCuenta(email, userID):
+    try:
+        with engine.connect() as conn:
+            conn.execute(users.delete().where(users.c.email == email))
+            conn.execute(keys.delete().where(keys.c.userID == userID))
+    finally:
+        conn.close()
+
+
+#>> eliminar todas las secciones de un usuario
+async def qEliminarSesiones(userID):
+    try:
+        with engine.connect() as conn:
+            conn.execute(keys.delete().where(keys.c.userID == userID))
     finally:
         conn.close()

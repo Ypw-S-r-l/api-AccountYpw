@@ -2,6 +2,7 @@ version: '3.10'
 services:
     app:
         build: .
+        image: apilogin:v1.4.8
         volumes:
             - /data/profile:/data/profile
         container_name: apilogin

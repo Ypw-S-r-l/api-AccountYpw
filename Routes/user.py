@@ -29,12 +29,11 @@ def verificarVacio(x):
             return False
 
 
-# Para generar keyUser
+#>> Para generar keyUser
 key = Fernet.generate_key()
 f = Fernet(key)
 
-
-# FUNCION PARA ENCRIPTAR EL PASSWORD DE USUARIO
+#>> FUNCION PARA ENCRIPTAR EL PASSWORD DE USUARIO
 def encrytPassw(passw):
 
     with open('./config/secretKey.txt') as file:
@@ -126,7 +125,11 @@ async def registrar(user: UserRegistro):
 
     email = user.email.strip()
     email = BeautifulSoup(email, features='html.parser').text
-
+    
+    numberCode = user.numberCode
+    numberCode= str(numberCode).strip()
+    numberCode = BeautifulSoup(numberCode, features='html.parser').text
+    
     phone = user.phone.strip()
     phone = BeautifulSoup(phone, features='html.parser').text
 
@@ -175,7 +178,7 @@ async def registrar(user: UserRegistro):
                                 support = "https://suport.com.do"
                                 footer = "2022 © SUPPORT"
 
-                                return verEnvioEmail(email, codeTMP, header, body, support, footer, "CÓDIGO DE ACTIVACIÓN DE CUENTA", "Se te ha enviado un código a este correo para que actives tu cuenta.", "Usuario agregado correctamente.", "No se pudo enviar a su correo el código de activación de su cuenta.")
+                                return await verEnvioEmail(email, codeTMP, header, body, support, footer, "CÓDIGO DE ACTIVACIÓN DE CUENTA", "Se te ha enviado un código a este correo para que actives tu cuenta.", "Usuario agregado correctamente.", "No se pudo enviar a su correo el código de activación de su cuenta.")
                             else:
                                 return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "El usuario que intenta registrar ya existe.", None)
                         else:
@@ -498,14 +501,14 @@ async def enviarPassCodeEmail(user: SetCode):
                     
 
                 if verificarVacio(arrayEmail) == False:
-                    return verEnvioEmail(email, codeTMP, header, body, support, footer, "Recuperación de contraseña", "Se te ha enviado un código como respuesta a tu peticion de recuperacion de contraseña.", "Correo enviado exitosamente.", "El correo no se pudo enviar.")
+                    return await verEnvioEmail(email, codeTMP, header, body, support, footer, "Recuperación de contraseña", "Se te ha enviado un código como respuesta a tu peticion de recuperacion de contraseña.", "Correo enviado exitosamente.", "El correo no se pudo enviar.")
                 else:
                     header = "SUPPORT"
                     body = "Su codigo de recuperacion es:"
                     support = "https://suport.com.do"
                     footer = "2022 © SUPPORT"
                         
-                    return verEnvioEmail(email, codeTMP, header, body, support, footer, "Recuperación de contraseña", "Se te ha enviado un código como respuesta a tu peticion de recuperacion de contraseña.", "Correo enviado exitosamente.", "El correo no se pudo enviar.")
+                    return await verEnvioEmail(email, codeTMP, header, body, support, footer, "Recuperación de contraseña", "Se te ha enviado un código como respuesta a tu peticion de recuperacion de contraseña.", "Correo enviado exitosamente.", "El correo no se pudo enviar.")
             else:
                 return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "Correo electrónico no encontrado.", None)
         else:
@@ -906,6 +909,48 @@ async def subirImagenPerfil(img: uploadImageProfile):
         return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "No se pudo subir la imagen.", None)
 
 
+
+# ********* ruta: OBTENER TODAS LAS APPS DEL USUARIO *********
+@user.post('/deleteAccount', status_code=200, response_model=DeleteAccount, tags=['Usuario'])
+async def eliminarCuenta(user: DeleteAccount):
+    
+    email= user.email.strip()
+    email= BeautifulSoup(email, features='html.parser').text
+    
+    password= user.password.strip()
+    password= BeautifulSoup(password, features='html.parser').text
+    passw = password.encode()
+    passw = encrytPassw(passw)
+    
+    userArray= {"email": email, "password": passw}
+    
+    try:
+        if verificarVacio(userArray) == False:
+            if es_correo_valido(email) == True:
+                
+                data= await qIntraLogin(email, passw)
+                
+                if data != None:
+                    userID= data["userID"]
+                    
+                    await qEliminarCuenta(email, userID)
+                    
+                    header = "Usted ha eliminado su cuenta"
+                    body = "Su cuenta ha sido eliminada de manera exitosa."
+                    support = "https://suport.com.do"
+                    footer = "2022 © SUPPORT"
+                        
+                    return await verEnvioEmail(email, email, header, body, support, footer, "Usted ha eliminado su cuenta", "Su cuenta ha sido eliminada de manera exitosa.", "Cuenta eliminada exitosamente.", "El correo no se pudo enviar.")
+                else:
+                    return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "Usuario no encontrado.", None)
+            else:
+                return responseModelErrorX(status.HTTP_401_UNAUTHORIZED, True, "Correo electrónico inválido.", None)
+        else:
+            return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+    except:
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "No se pudo realizar la peticion.", None)
+
+
 #>> metodo para autenticar el usuario developer
 """
 @user.get('/developer/me', status_code=200, tags=['Usuario'])
@@ -913,4 +958,3 @@ async def readME(permiso: str = Depends(get_current_username)):
     
     return responseModelErrorX(status.HTTP_200_OK, False, "Usuario confirmado.", None)
 """
-    
