@@ -146,14 +146,26 @@ async def qVerificarKeyUser(appConnect, keyUser):
     finally:
         conn.close()
 
-#>> obtener keyData en tabla data
-async def qObtenerKeyData(userID):
+#>> obtener keyData en especifico en tabla data
+async def qObtenerKeyData(userID, keyData):
     try:
         with engine.connect() as conn:
-            datos= conn.execute(dataTable.select().where(dataTable.c.userID == userID)).fetchall()
+            datos= conn.execute(dataTable.select().where(dataTable.c.userID == userID, dataTable.c.keyData == keyData)).first()
             return datos
     finally:
         conn.close()
+
+
+async def qObtenerAllKeyData(userID):
+    try:
+        with engine.connect() as conn:
+            #datos= conn.execute(dataTable.select(dataTable.c.keyData).where(dataTable.c.userID == userID)).fetchall()
+            sql= text("select keyData from data where userID=:userID")
+            datos= conn.execute(sql, userID=userID).fetchall()
+            return datos
+    finally:
+        conn.close()
+
 
 async def qVerificarKeyData(userID, keyData):
     try:

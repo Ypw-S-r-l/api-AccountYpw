@@ -9,9 +9,44 @@ from config.regexp import *
 from Routes.user import user #APIRouter
 
 
-#>> metodo get data
+
 @user.post('/data/get', tags=["Data"])
-async def dataGet(dat: DattGeneral):
+async def dataGet(dat: DataGetKeyData):
+    
+    appConnect= dat.appConnect.strip()
+    appConnect= BeautifulSoup(appConnect, features='html.parser').text
+
+    keyUser= dat.keyUser.strip()
+    keyUser= BeautifulSoup(keyUser, features='html.parser').text
+    
+    keyData= dat.keyData.strip()
+    keyData= BeautifulSoup(keyData, features='html.parser').text
+    
+    try:
+        if appConnect and keyUser and keyData:
+            #>> globalUser del usuario
+            data= await qVerificarKeyUser(appConnect, keyUser)
+            
+            if data!=None:
+                userID= data[0]
+                #>> keydata del usuario
+                keydatos= await qObtenerKeyData(userID, keyData)
+                
+                if keydatos:
+                    return responseModelErrorX(status.HTTP_200_OK, False, f"KeyData: {keyData}", keydatos)
+                else:
+                    return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "KeyData no existente.", None)
+            else:
+                return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "Usuario no encontrado.", None)
+        else:
+            return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Existen campos vacios.", None)
+    except:
+        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "No se pudo realizar la peticion.", None)
+
+
+#>> metodo get data
+@user.post('/data/getAll', tags=["Data"])
+async def dataGetAll(dat: DattGeneral):
     
     appConnect= dat.appConnect.strip()
     appConnect= BeautifulSoup(appConnect, features='html.parser').text
@@ -27,7 +62,7 @@ async def dataGet(dat: DattGeneral):
             if data!=None:
                 userID= data[0]
                 #>> keydata del usuario
-                keydatos= await qObtenerKeyData(userID)
+                keydatos= await qObtenerAllKeyData(userID)
                 
                 if keydatos:
                     return responseModelErrorX(status.HTTP_200_OK, False, "KeyData existentes.", keydatos)

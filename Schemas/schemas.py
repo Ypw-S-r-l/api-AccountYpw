@@ -134,3 +134,6 @@ class DataCreateSetData(DattGeneral):
 
 class DataRemoveData(DattGeneral):
     keyData: str
+
+class DataGetKeyData(DattGeneral):
+    keyData: str
