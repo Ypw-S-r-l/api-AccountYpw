@@ -45,7 +45,7 @@ async def dataGet(dat: DataGetKeyData):
 
 
 #>> metodo get data
-@user.post('/data/getAll', tags=["Data"])
+@user.post('/data/keys', tags=["Data"])
 async def dataGetAll(dat: DattGeneral):
     
     appConnect= dat.appConnect.strip()
