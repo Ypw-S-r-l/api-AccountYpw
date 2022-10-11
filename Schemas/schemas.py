@@ -122,3 +122,15 @@ class uploadImageProfile(BaseModel):
 class DeleteAccount(BaseModel):
     email: str
     password: str
+
+
+class DattGeneral(BaseModel):
+    appConnect: str
+    keyUser: str
+
+class DataCreateSetData(DattGeneral):
+    keyData: str
+    Data: Optional[dict]
+
+class DataRemoveData(DattGeneral):
+    keyData: str

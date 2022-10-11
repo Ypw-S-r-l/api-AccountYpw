@@ -79,7 +79,6 @@ async def obtenerUsuario(user: UserObtener):
 
     # Verificamos si algun campo esta vacio
     if UserObtener:
-
         try:
             # Consultamos a la base de datos para obtener el userID del usuario
             with engine.connect() as conn:

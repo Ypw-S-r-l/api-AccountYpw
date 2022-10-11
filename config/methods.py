@@ -4,12 +4,12 @@ from fastapi.encoders import jsonable_encoder
 from fastapi import status
 from config.email import enviarEmail
 from sqlalchemy import text
-from Models.index import users, keys, apiKey
+from Models.index import users, keys, apiKey, dataTable
 from Database.conexion import engine
 
 # Metodos de control de versiones
 def APIversion():
-    verApi = ("v1", "v1.4.9")
+    verApi = ("v1", "v1.4.10")
     return verApi
 
 version = APIversion()
@@ -120,11 +120,59 @@ async def qEliminarCuenta(email, userID):
     finally:
         conn.close()
 
-
 #>> eliminar todas las secciones de un usuario
 async def qEliminarSesiones(userID):
     try:
         with engine.connect() as conn:
             conn.execute(keys.delete().where(keys.c.userID == userID))
+    finally:
+        conn.close()
+
+#>> insertar keyData en data
+async def qInsertarDataKeyData(userID, keyData, data):
+    try:
+        with engine.connect() as conn:
+            conn.execute(dataTable.insert().values(userID=userID, keyData=keyData, Data=data))
+    finally:
+        conn.close()
+
+#>> consultamos a la base de datos para obtener el userID del usuario
+async def qVerificarKeyUser(appConnect, keyUser):
+    try:
+        with engine.connect() as conn:
+            vdata= conn.execute(keys.select(keys.c.userID).where(
+                keys.c.keyUser == keyUser, keys.c.appConnect == appConnect)).first()
+            return vdata
+    finally:
+        conn.close()
+
+#>> obtener keyData en tabla data
+async def qObtenerKeyData(userID):
+    try:
+        with engine.connect() as conn:
+            datos= conn.execute(dataTable.select().where(dataTable.c.userID == userID)).fetchall()
+            return datos
+    finally:
+        conn.close()
+
+async def qVerificarKeyData(userID, keyData):
+    try:
+        with engine.connect() as conn:
+            datos= conn.execute(dataTable.select().where(dataTable.c.keyData == keyData, dataTable.c.userID == userID)).first()
+            return datos
+    finally:
+        conn.close()
+
+async def qUpdateFieldData(userID, keyData, data):
+    try:
+        with engine.connect() as conn:
+            conn.execute(dataTable.update().values(Data=data).where(dataTable.c.keyData == keyData, dataTable.c.userID == userID))
+    finally:
+        conn.close()
+
+async def qDeleteKeyData(userID, keyData):
+    try:
+        with engine.connect() as conn:
+            conn.execute(dataTable.delete().where(dataTable.c.keyData == keyData, dataTable.c.userID == userID))
     finally:
         conn.close()

@@ -45,7 +45,7 @@ users = Table(
 
 keys = Table(
     'keys', meta,
-    Column('userID', Integer, nullable=False),
+    Column('userID', Integer, primary_key=True, nullable=False),
     Column('keyUser', String, nullable=False),
     Column('appConnect', String(255), nullable=False),
     Column('keyID', Integer, nullable=False)
@@ -62,5 +62,12 @@ apiKey = Table(
     Column('permissions', String(100), nullable=False)
 )
 
+dataTable = Table(
+    'data', meta,
+    Column('idData', Integer, primary_key=True, nullable=False, autoincrement=True),
+    Column('userID', Integer, nullable=False),
+    Column('keyData', String, nullable=False),
+    Column('Data', JSON, nullable=False)
+)
 
 meta.create_all(engine)  # Creando todo, las tablas, funciones, etc

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 import uvicorn
-from Routes.user import user
+from Routes.user import user #APIRoute
+from Routes.data import user #APIRoute
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -8,7 +9,7 @@ from fastapi import Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from Database.conexion import conn
-from config.methods import APIversion
+from config.methods import version
 
 
 description = """
@@ -27,9 +28,11 @@ You will be able to:
 * **Set recovery code** (_implemented_).
 * **Change password code** (_implemented_).
 * **Update all data user** (_implemented_).
+* **Update field data** (_implemented_).
+* **Activate account email** (_implemented_).
+* **Upload Image profile** (_implemented_).
+* **Delete account** (_implemented_).
 """
-
-version= APIversion()
 
 app = FastAPI(debug=True,
     title="Account YPW",
