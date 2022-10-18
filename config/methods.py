@@ -9,7 +9,7 @@ from Database.conexion import engine
 
 # Metodos de control de versiones
 def APIversion():
-    verApi = ("v1", "v1.4.10")
+    verApi = ("v1", "v1.4.11")
     return verApi
 
 version = APIversion()
@@ -133,6 +133,14 @@ async def qInsertarDataKeyData(userID, keyData, data):
     try:
         with engine.connect() as conn:
             conn.execute(dataTable.insert().values(userID=userID, keyData=keyData, Data=data))
+    finally:
+        conn.close()
+        
+async def qVerKeyData(userID, keyData):
+    try:
+        with engine.connect() as conn:
+            nameKey= conn.execute(dataTable.select().where(dataTable.c.userID == userID, dataTable.c.keyData == keyData)).first()
+            return nameKey
     finally:
         conn.close()
 

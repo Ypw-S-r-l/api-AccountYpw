@@ -92,19 +92,24 @@ async def dataCreate(dat: DataCreateSetData):
     data= dat.Data
     
     try:
-        if appConnect and keyUser and keyData:
+        if appConnect and keyUser and keyData and data:
             #>> globalUser del usuario
             dataUser= await qVerificarKeyUser(appConnect, keyUser)
             
             if dataUser!=None:
                 userID= dataUser[0]
                 #>> keydata del usuario
-                ex= await qInsertarDataKeyData(userID, keyData, data)
+                nameKeyData= await qVerKeyData(userID, keyData)
                 
-                if ex==None:
-                    return responseModelErrorX(status.HTTP_201_CREATED, False, "Datos insertados correctamente.", None)
+                if nameKeyData == None:
+                    ex= await qInsertarDataKeyData(userID, keyData, data)
+                
+                    if ex==None:
+                        return responseModelErrorX(status.HTTP_201_CREATED, False, "Datos insertados correctamente.", None)
+                    else:
+                        return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "Datos no insertados.", None)
                 else:
-                    return responseModelErrorX(status.HTTP_200_OK, True, "Datos no insertados.", None)
+                    return responseModelErrorX(status.HTTP_400_BAD_REQUEST, True, "KeyData ya existe.", None)
             else:
                 return responseModelErrorX(status.HTTP_404_NOT_FOUND, True, "Usuario no encontrado.", None)
         else:

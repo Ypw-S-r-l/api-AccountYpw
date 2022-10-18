@@ -130,7 +130,7 @@ class DattGeneral(BaseModel):
 
 class DataCreateSetData(DattGeneral):
     keyData: str
-    Data: Optional[dict]
+    Data: Optional[list]
 
 class DataRemoveData(DattGeneral):
     keyData: str
