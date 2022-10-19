@@ -1,3 +1,4 @@
+import json
 from time import *
 from pydantic import BaseModel, Field
 from typing import *
@@ -128,9 +129,10 @@ class DattGeneral(BaseModel):
     appConnect: str
     keyUser: str
 
+
 class DataCreateSetData(DattGeneral):
     keyData: str
-    Data: Optional[list]
+    Data: str
 
 class DataRemoveData(DattGeneral):
     keyData: str

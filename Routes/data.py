@@ -95,11 +95,13 @@ async def dataCreate(dat: DataCreateSetData):
         if appConnect and keyUser and keyData and data:
             #>> globalUser del usuario
             dataUser= await qVerificarKeyUser(appConnect, keyUser)
+            #dataAr.append(data)
             
             if dataUser!=None:
                 userID= dataUser[0]
                 #>> keydata del usuario
                 nameKeyData= await qVerKeyData(userID, keyData)
+                #dataJSON= jsonable_encoder(dataAr)
                 
                 if nameKeyData == None:
                     ex= await qInsertarDataKeyData(userID, keyData, data)
